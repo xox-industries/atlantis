@@ -1,0 +1,28 @@
+name: atlantis
+
+services:
+  api:
+    container_name: atlantis-api
+    image: ghcr.io/lynbean/atlantis/api:latest
+    build:
+      context: api
+      dockerfile: Dockerfile.dev
+
+    networks:
+      - atlantis
+    ports:
+      - 5000:5000
+      - 5678:5678
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+
+  redis:
+    container_name: atlantis-redis
+    image: redis/redis-stack:latest
+    networks:
+      - atlantis
+    restart: unless-stopped
+
+networks:
+  atlantis:

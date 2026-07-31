@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "api",
+      "path": "./api",
+    },
+    {
+      "name": "cli",
+      "path": "./cli",
+    },
+    {
+      "name": "root",
+      "path": ".",
+    },
+  ],
+}

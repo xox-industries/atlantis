@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.git": true,
+    "**/.hg": true,
+    "**/.svn": true,
+    "**/node_modules": true,
+    "**/Thumbs.db": true,
+    "api": true,
+    "cli": true
+  }
+}

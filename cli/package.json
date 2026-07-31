@@ -1,0 +1,14 @@
+{
+  "name": "atlantis-cli",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "@clack/prompts": "^1.7.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

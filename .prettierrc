@@ -1,0 +1,33 @@
+{
+  "endOfLine": "lf",
+  "printWidth": 90,
+  "tabWidth": 2,
+  "useTabs": false,
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+      "options": {
+        "semi": false,
+        "singleQuote": true,
+        "trailingComma": "es5"
+      }
+    },
+    {
+      "files": "*.css",
+      "options": {
+        "printWidth": 180
+      }
+    },
+    {
+      "files": "*.sql",
+      "options": {
+        "dataTypeCase": "upper",
+        "functionCase": "upper",
+        "identifierCase": "upper",
+        "keywordCase": "upper",
+        "language": "postgresql"
+      }
+    }
+  ],
+  "plugins": ["prettier-plugin-sql", "prettier-plugin-organize-imports"]
+}

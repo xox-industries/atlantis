@@ -1,0 +1,13 @@
+name: soonlinmas
+
+services:
+  api:
+    develop:
+      watch:
+        - path: api
+          target: /app
+          action: sync
+          initial_sync: true
+        - path: api/uv.lock
+          target: /app/uv.lock
+          action: sync+restart
