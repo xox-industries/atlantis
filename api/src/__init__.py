@@ -13,7 +13,12 @@ from supabase import AsyncClientOptions
 from supabase import create_async_client as create_supabase_client
 
 from src.app import App
+from src.apt import Apt
+from src.docker import Docker
+from src.palworld import Palworld
+from src.persistence import Persistence
 from src.route import create_context, create_schema
+from src.steam import Steam
 
 ENV: Literal["development", "production"] = cast(
     "Literal['development', 'production']",
@@ -40,6 +45,12 @@ async def lifespan(app: App) -> AsyncGenerator[None]:
         decode_responses=False,
     )
     app.persistence = Persistence(app, app.supabase_database_pool)
+    app.apt = Apt(app)
+    app.steam = Steam(app)
+    app.docker = Docker(app)
+    app.palworld = Palworld(app)
+
+    await app.ensure_wineprefix()
 
     yield
 

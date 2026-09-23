@@ -1,41 +1,70 @@
 FROM ubuntu:24.04
 
+ARG UID
+ARG GID
+
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
+ENV DEBIAN_FRONTEND=noninteractive \
+    ENV=development \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    ENV=development
+    USERNAME=app
 
 RUN dpkg --add-architecture i386 && \
     apt-get update && \
+    echo "steamcmd steam/question select I AGREE" | debconf-set-selections && \
     apt-get install -y --no-install-recommends \
-    curl \
     ca-certificates \
-    software-properties-common \
+    curl \
+    gnupg \
+    gosu \
     lib32gcc-s1 \
     libcurl4 \
-    screen \
-    openjdk-21-jdk \
-    && add-apt-repository -y ppa:openjdk-r/ppa && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    openjdk-8-jdk \
+    lsb-release \
+    software-properties-common \
+    steam-libs-i386 \
+    steamcmd \
+    winbind \
+    wine \
+    wine32 \
+    wine64 \
+    winetricks \
+    xvfb \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && chmod a+r /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /opt/steamcmd && \
-    curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | \
-    tar -xz -C /opt/steamcmd && \
-    ln -s /opt/steamcmd/steamcmd.sh /usr/local/bin/steamcmd
+RUN userdel -r ubuntu 2>/dev/null || true \
+    && groupdel ubuntu 2>/dev/null || true \
+    && groupadd --non-unique --gid "$GID" app \
+    && useradd --non-unique --uid "$UID" --gid "$GID" --create-home --shell /bin/bash app
+
+USER app
+
+ENV PATH="/home/app/.local/bin:$PATH" \
+    HOME=/home/app
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-RUN /root/.local/bin/uv python install 3.14
+RUN uv python install 3.14
 
-COPY . .
+COPY --chown=app:app . .
+
+USER root
+
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 5000 5678
 
-CMD [ "sh", "-c", \
-    "/root/.local/bin/uv sync --frozen && /app/.venv/bin/python -Xfrozen_modules=off -m debugpy --listen 0.0.0.0:5678 -m uvicorn main:app --host 0.0.0.0 --port 5000 --reload" \
-    ]
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+CMD ["sh", "-c", \
+    "uv sync --frozen && \
+    .venv/bin/python -Xfrozen_modules=off \
+    -m debugpy --listen 0.0.0.0:5678 \
+    -m uvicorn main:app --host 0.0.0.0 --port 5000 --reload"]

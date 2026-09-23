@@ -7,6 +7,9 @@ services:
     build:
       context: api
       dockerfile: Dockerfile.prod
+      args:
+        - UID=${UID}
+        - GID=${GID}
 
     depends_on:
       redis:
@@ -25,7 +28,17 @@ services:
     ports:
       - 59111:5000
     restart: always
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: ${HOME}/.atlantis
+        target: /mnt/data
     environment:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+      DOCKER_IMAGE: ${DOCKER_IMAGE_URL}/api:${DOCKER_IMAGE_TAG:-latest}
       REDIS_URL: redis://redis:6379
       SUPABASE_DB_URL: postgresql://postgres:postgres@supabase_db_atlantis:5432/postgres
       SUPABASE_SECRET_KEY: sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz

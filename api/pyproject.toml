@@ -4,11 +4,15 @@ version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.14, <3.15"
 dependencies = [
+    "aiodocker>=0.24.0",
+    "asyncpg>=0.30.0",
     "fastapi>=0.116.1",
     "loguru>=0.7.3",
     "redis>=6.4.0",
     "strawberry-graphql[fastapi]>=0.278.1",
+    "supabase>=2.18.1",
     "uvicorn[standard]>=0.35.0",
+    "vdf>=3.4",
 ]
 
 [dependency-groups]

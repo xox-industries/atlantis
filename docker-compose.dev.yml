@@ -7,6 +7,9 @@ services:
     build:
       context: api
       dockerfile: Dockerfile.dev
+      args:
+        - UID=${UID}
+        - GID=${GID}
 
     networks:
       - supabase_network_atlantis
@@ -14,7 +17,17 @@ services:
       - 5000:5000
       - 5678:5678
     restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: ./.atlantis
+        target: /mnt/data
     environment:
+      UID: ${UID}
+      GID: ${GID}
+      DOCKER_IMAGE: ${DOCKER_IMAGE_URL}/api:${DOCKER_IMAGE_TAG:-latest}
       REDIS_URL: redis://redis:6379
       SUPABASE_DB_URL: postgresql://postgres:postgres@supabase_db_atlantis:5432/postgres
       SUPABASE_SECRET_KEY: sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz
