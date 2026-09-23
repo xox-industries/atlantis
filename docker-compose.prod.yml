@@ -21,19 +21,23 @@ services:
       interval: 20s
       retries: 2
     networks:
-      - atlantis
+      - supabase_network_atlantis
     ports:
       - 59111:5000
     restart: always
     environment:
       REDIS_URL: redis://redis:6379
+      SUPABASE_DB_URL: postgresql://postgres:postgres@supabase_db_atlantis:5432/postgres
+      SUPABASE_SECRET_KEY: sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz
+      SUPABASE_URL: http://supabase_kong_atlantis:8000
 
   redis:
     container_name: atlantis-redis
     image: redis/redis-stack-server:latest
     networks:
-      - atlantis
+      - supabase_network_atlantis
     restart: always
 
 networks:
-  atlantis:
+  supabase_network_atlantis:
+    external: true

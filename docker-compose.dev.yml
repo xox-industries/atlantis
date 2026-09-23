@@ -3,26 +3,30 @@ name: atlantis
 services:
   api:
     container_name: atlantis-api
-    image: ghcr.io/lynbean/atlantis/api:latest
+    image: ${DOCKER_IMAGE_URL}/api:${DOCKER_IMAGE_TAG:-latest}
     build:
       context: api
       dockerfile: Dockerfile.dev
 
     networks:
-      - atlantis
+      - supabase_network_atlantis
     ports:
       - 5000:5000
       - 5678:5678
     restart: unless-stopped
     environment:
       REDIS_URL: redis://redis:6379
+      SUPABASE_DB_URL: postgresql://postgres:postgres@supabase_db_atlantis:5432/postgres
+      SUPABASE_SECRET_KEY: sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz
+      SUPABASE_URL: http://supabase_kong_atlantis:8000
 
   redis:
     container_name: atlantis-redis
     image: redis/redis-stack:latest
     networks:
-      - atlantis
+      - supabase_network_atlantis
     restart: unless-stopped
 
 networks:
-  atlantis:
+  supabase_network_atlantis:
+    external: true
