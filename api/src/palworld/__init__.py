@@ -6,8 +6,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from aiodocker.containers import DockerContainer
-from aiodocker.exceptions import DockerError
-from fastapi import HTTPException, status
 
 from src.app import App
 from src.steam import Steam
@@ -127,50 +125,15 @@ class Palworld:
             "atlantis.instance": instance,
         }
 
-        max_port_attempts = 100
-        for attempt in range(max_port_attempts):
-            try:
-                return await self._app.docker.run(
-                    name=name,
-                    image=image,
-                    command=command,
-                    volumes=volumes,
-                    read_only_volumes=read_only_volumes,
-                    ports=ports,
-                    labels=labels,
-                )
-
-            except DockerError as exc:
-                is_port_conflict = (
-                    exc.status == _HTTP_INTERNAL_SERVER_ERROR
-                    and "port" in str(exc).lower()
-                    and "already" in str(exc).lower()
-                )
-                if not is_port_conflict or attempt == max_port_attempts - 1:
-                    raise
-                port = await self._app.docker.find_free_port(
-                    base=port + 1,
-                    game="palworld",
-                    protocol="udp",
-                )
-                ports = {f"{port}/udp": ("0.0.0.0", port)}  # noqa: S104
-                command = [
-                    "bash",
-                    "-c",
-                    (
-                        f"cp -a {self._app.WINE_DIR} /home/app/wineprefix && "
-                        "rm -f /home/app/wineprefix/wineserver /home/app/wineprefix/.update-timestamp && "
-                        f"export WINEPREFIX=/home/app/wineprefix && "
-                        "export WINEARCH=win64 && "
-                        "export WINEDEBUG=-all && "
-                        "xvfb-run -a wineboot -u && "
-                        f"xvfb-run -a wine {self.APP_DIR.joinpath('PalServer.exe')} "
-                        f"-publiclobby -port={port} "
-                        f"> {server_log} 2>&1"
-                    ),
-                ]
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return await self._app.docker.run(
+            name=name,
+            image=image,
+            command=command,
+            volumes=volumes,
+            read_only_volumes=read_only_volumes,
+            ports=ports,
+            labels=labels,
+        )
 
     async def stop(self, instance: str, /) -> str:
         name = self.get_instance_name(instance)

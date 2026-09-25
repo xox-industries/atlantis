@@ -79,7 +79,7 @@ class Docker:
 
     async def stop(self, name: str, /) -> None:
         try:
-            container = await self._docker.containers.get(name)
+            container = await self._docker.containers.get(f"atlantis-{name}")
         except DockerError as exc:
             if exc.status == _HTTP_NOT_FOUND:
                 return
@@ -90,7 +90,7 @@ class Docker:
 
     async def is_running(self, name: str, /) -> bool:
         try:
-            container = await self._docker.containers.get(name)
+            container = await self._docker.containers.get(f"atlantis-{name}")
         except DockerError as exc:
             if exc.status == _HTTP_NOT_FOUND:
                 return False
@@ -101,7 +101,9 @@ class Docker:
 
     async def get_host_port(self, container: str | DockerContainer, /, *, protocol: str = "udp") -> int | None:
         try:
-            container = await self._docker.containers.get(container) if isinstance(container, str) else container
+            container = (
+                await self._docker.containers.get(f"atlantis-{container}") if isinstance(container, str) else container
+            )
         except DockerError as exc:
             if exc.status == _HTTP_NOT_FOUND:
                 return None
@@ -133,12 +135,15 @@ class Docker:
         used_ports: set[int] = set()
         for container in containers:
             info = await container.show()
-            ports = info.get("Ports", [])
-            for port in ports:
-                if port.get("Type") == protocol:
-                    public_port = port.get("PublicPort")
-                    if isinstance(public_port, int):
-                        used_ports.add(public_port)
+            ports = info.get("NetworkSettings", {}).get("Ports", {})
+            for port_proto, bindings in ports.items():
+                if not port_proto.endswith(f"/{protocol}"):
+                    continue
+
+                for binding in bindings or []:
+                    host_port = binding.get("HostPort")
+                    if host_port is not None:
+                        used_ports.add(int(host_port))
 
         for offset in range(max_attempts):
             candidate = base + offset
