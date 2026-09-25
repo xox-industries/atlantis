@@ -1,0 +1,7 @@
+mutation ATL_CommandsCreatePalworld_CreatePalworld {
+  createPalworld {
+    name
+    running
+    port
+  }
+}
