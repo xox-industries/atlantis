@@ -43,6 +43,8 @@ class Palworld:
     APP_ID = "2394010"
     BASE_PORT = 8211
 
+    CONTAINER_APP_DIR = Path("/home/app/PalServer")
+
     def __init__(self, app: App, /) -> None:
         self._app = app
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -92,31 +94,38 @@ class Palworld:
         )
 
         name = self.get_instance_name(instance)
-        instance_dir_str = str(target)
         server_log = target.joinpath("server.log")
 
         command = [
             "bash",
             "-c",
             (
+                f"rm -rf {self.CONTAINER_APP_DIR} && "
+                "echo 'Copying app into container' && "
+                f"cp -a --reflink=auto {self.APP_DIR} {self.CONTAINER_APP_DIR} && "
+                f"rm -rf {self.CONTAINER_APP_DIR.joinpath('Pal', 'Saved')} && "
+                f"ln -s {target_saved!s} {self.CONTAINER_APP_DIR.joinpath('Pal', 'Saved')} && "
+                "echo 'Copying wineprefix' && "
                 f"cp -a {self._app.WINE_DIR} /home/app/wineprefix && "
                 "rm -f /home/app/wineprefix/wineserver /home/app/wineprefix/.update-timestamp && "
                 f"export WINEPREFIX=/home/app/wineprefix && "
                 "export WINEARCH=win64 && "
                 "export WINEDEBUG=-all && "
+                "echo 'Booting wineprefix' && "
                 "xvfb-run -a wineboot -u && "
-                f"xvfb-run -a wine {self.APP_DIR.joinpath('PalServer.exe')} "
+                f"echo 'Starting PalServer on port {port}' && "
+                f"xvfb-run -a wine {self.CONTAINER_APP_DIR.joinpath('PalServer.exe')} "
                 f"-publiclobby -port={port} "
                 f"> {server_log} 2>&1"
             ),
         ]
 
         volumes = {
-            str(App.get_host_path(target)): instance_dir_str,
-            str(App.get_host_path(target_saved)): str(self.APP_SAVED_DIR),
-            str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR),
+            str(App.get_host_path(target)): str(target),
+            str(App.get_host_path(target_saved)): str(target_saved),
         }
         read_only_volumes = {
+            str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR),
             str(App.get_host_path(self._app.WINE_DIR)): str(self._app.WINE_DIR),
         }
         ports = {f"{port}/udp": ("0.0.0.0", port)}  # noqa: S104
