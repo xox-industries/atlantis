@@ -8,13 +8,6 @@ const gray = (text: string): string => chalk.grey(text)
 const magenta = (text: string): string => chalk.magentaBright(text)
 
 class CustomHelp extends Help {
-  override commandDescription(cmd: Command): string {
-    const description = super.commandDescription(cmd)
-    const parts = description.split(' ')
-    parts[0] = magenta(parts[0] as string)
-    return parts.join(' ')
-  }
-
   override commandUsage(cmd: Command): string {
     const usage = super.commandUsage(cmd)
     return usage

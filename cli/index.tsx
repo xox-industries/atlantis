@@ -3,11 +3,17 @@ import startCommand from '@/src/commands/start'
 import steamCommand from '@/src/commands/steam'
 import stopCommand from '@/src/commands/stop'
 import { AtlantisCommand } from '@/src/lib/command'
+import chalk from 'chalk'
+import { hyperlink } from './src/lib/strings'
+
+const GITHUB_URL = 'https://github.com/xox-industries/atlantis'
+const APP_VERSION = process.env.APP_VERSION || 'dev'
 
 const program = new AtlantisCommand()
   .name('atlantis')
   .description(
-    'Atlantis is a centralized repository for managing and maintaining our Linux server infrastructure.'
+    `${hyperlink(chalk.magentaBright('Atlantis'), GITHUB_URL)} is a centralized repository for managing and maintaining our Linux server infrastructure. ` +
+      `${hyperlink(chalk.gray(`(${APP_VERSION})`), GITHUB_URL)}`
   )
   .addCommand(startCommand)
   .addCommand(stopCommand)

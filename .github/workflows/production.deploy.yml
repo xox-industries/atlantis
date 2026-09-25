@@ -9,36 +9,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.DOCKER_PAT }}
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/setup-compose-action@v2
-
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Build and Push API Image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./api
-          file: ./api/Dockerfile.prod
-          push: true
-          tags: |
-            ${{ vars.DOCKER_IMAGE_URL }}/api:latest
-
   deploy:
     runs-on: ubuntu-latest
-    needs: build
 
     steps:
       - uses: actions/checkout@v4
@@ -49,22 +21,107 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:ci
 
-      - uses: docker/setup-compose-action@v2
-
-      - name: Stop cloud server
+      - name: Deploy on server
         env:
-          DOCKER_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
-        run: |
-          docker compose -f docker-compose.prod.yml stop
-
-      - name: Deploy to cloud
-        env:
-          DOCKER_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
           DOCKER_IMAGE_TAG: latest
           DOCKER_IMAGE_URL: ${{ vars.DOCKER_IMAGE_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOST_USERNAME: ${{ secrets.HOST_USERNAME }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          TAILSCALE_HOST: ${{ vars.TAILSCALE_TARGET_HOST }}
         run: |
-          docker logout ghcr.io
-          echo ${{ secrets.DOCKER_PAT }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml up -d
-          docker logout ghcr.io
+          set -e
+          DEPLOY_DIR="/tmp/atlantis-$RELEASE_TAG"
+
+          cat > .env <<EOF
+          DEPLOY_DIR=$DEPLOY_DIR
+          DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG
+          DOCKER_IMAGE_URL=$DOCKER_IMAGE_URL
+          GH_TOKEN=$GH_TOKEN
+          HOST_USERNAME=$HOST_USERNAME
+          RELEASE_TAG=$RELEASE_TAG
+          APP_VERSION=$RELEASE_TAG
+          API_ENDPOINT_URL=http://127.0.0.1:59111/graphql
+          EOF
+
+          ssh -o StrictHostKeyChecking=no "$HOST_USERNAME"@$TAILSCALE_HOST "mkdir -p $DEPLOY_DIR"
+          scp -o StrictHostKeyChecking=no .env "$HOST_USERNAME"@$TAILSCALE_HOST:$DEPLOY_DIR/.env
+
+          ssh -o StrictHostKeyChecking=no "$HOST_USERNAME"@$TAILSCALE_HOST <<'REMOTE'
+            set -e
+            source "$DEPLOY_DIR/.env"
+            SRC_DIR="$DEPLOY_DIR/src"
+            trap 'rm -rf "$DEPLOY_DIR"' EXIT
+
+            # Clone the release into the deploy directory
+            git clone --branch "$RELEASE_TAG" "https://$GH_TOKEN@github.com/${{ github.repository }}.git" "$SRC_DIR"
+
+            # Make the env file available to bun inside the CLI folder
+            cp "$DEPLOY_DIR/.env" "$SRC_DIR/cli/.env"
+
+            cd "$SRC_DIR"
+
+            # Start the local Supabase stack
+            for i in 1 2 3; do
+              echo "Starting local Supabase (attempt $i/3)..."
+              if bun run db:start; then
+                break
+              fi
+              if [ "$i" -eq 3 ]; then
+                echo "Failed to start local Supabase after 3 attempts"
+                exit 1
+              fi
+              echo "Retrying in 30 seconds..."
+              sleep 30
+            done
+
+            # Build the new API image before stopping the running services
+            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml build api'
+
+            # Stop the running API/Redis services before applying local migrations
+            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml stop'
+
+            # Apply local Supabase migrations; fall back to the previous version on failure
+            set +e
+            bun run db:migration-up
+            MIGRATE_STATUS=$?
+            set -e
+
+            if [ "$MIGRATE_STATUS" -ne 0 ]; then
+              echo "Local Supabase migration failed, falling back to previous version"
+              sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml start'
+              exit 1
+            fi
+
+            # Generate API Supabase codegen from the local DB
+            bun run api:codegen
+
+            # Start the new services
+            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml up -d'
+
+            # Wait for the API container to report healthy
+            for i in $(seq 1 60); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' atlantis-api 2>/dev/null || echo starting)
+              echo "API health check $i/60: $STATUS"
+              if [ "$STATUS" = "healthy" ]; then
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$STATUS" != "healthy" ]; then
+              echo "API did not become healthy in time"
+              exit 1
+            fi
+
+            # Build and install the CLI executable
+            cd cli
+            bun install --frozen-lockfile
+            bun run codegen:production
+            bun run build
+            mkdir -p ~/.atlantis/bin
+            cp dist/atlantis ~/.atlantis/bin/atlantis
+            chmod +x ~/.atlantis/bin/atlantis
+          REMOTE
+
+          rm -f .env
