@@ -1,0 +1,5 @@
+query ATL_CommandsSteamAuthShow_DisplaySteam {
+  displaySteam {
+    username
+  }
+}

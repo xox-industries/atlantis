@@ -1,0 +1,7 @@
+subscription ATL_CommandsSteamValidate_ValidateApp(
+  $appId: String!
+  $anonymous: Boolean!
+  $platform: SteamPlatform!
+) {
+  steamValidateApp(appId: $appId, anonymous: $anonymous, platform: $platform)
+}

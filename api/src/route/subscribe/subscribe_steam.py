@@ -16,7 +16,7 @@ class SteamPlatform(enum.Enum):
 @strawberry.type
 class SubscribeSteamType:
     @strawberry.subscription
-    async def steam_save_credential(
+    async def steam_login(
         self,
         username: str,
         password: str,
@@ -25,7 +25,7 @@ class SubscribeSteamType:
         code: str | None = None,
     ) -> AsyncGenerator[str]:
         steam = info.context.app.steam
-        return await steam.save_credential(username=username, password=password, code=code)
+        return await steam.login(username=username, password=password, code=code)
 
     @strawberry.subscription
     async def steam_validate_app(

@@ -1,0 +1,3 @@
+mutation ATL_CommandsSteamAuthLogout_SteamLogout {
+  steamLogout
+}

@@ -1,0 +1,7 @@
+subscription ATL_CommandsSteamAuthLogin_SteamLogin(
+  $username: String!
+  $password: String!
+  $code: String
+) {
+  steamLogin(username: $username, password: $password, code: $code)
+}

@@ -21,7 +21,11 @@ class Steam:
 
     @property
     def account(self) -> str | None:
-        with self.DATA_DIR.joinpath(".local/share/Steam/config/config.vdf").open("r", encoding="utf-8") as f:
+        config_file = self.DATA_DIR.joinpath(".local/share/Steam/config/config.vdf")
+        if not config_file.exists():
+            return None
+
+        with config_file.open("r", encoding="utf-8") as f:
             data: dict = vdf.load(f)
 
         username = cast(
@@ -66,7 +70,11 @@ class Steam:
         if proc.returncode != 0:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    async def save_credential(self, *, username: str, password: str, code: str | None = None) -> AsyncGenerator[str]:
+    async def logout(self) -> None:
+        config_path = self.DATA_DIR.joinpath(".local/share/Steam/config/config.vdf")
+        await asyncio.to_thread(config_path.unlink, missing_ok=True)
+
+    async def login(self, *, username: str, password: str, code: str | None = None) -> AsyncGenerator[str]:
         args = [
             "+login",
             username,

@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 
 const config = defineConfig([
   {
-    ignores: ['**/.*', '**/*.css', 'components/ui/**', 'stores/graphql/generated.ts'],
+    ignores: ['**/.*', '**/*.css', 'components/ui/**', '**/stores/graphql/generated.ts'],
   },
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],

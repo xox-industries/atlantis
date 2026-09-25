@@ -1,5 +1,6 @@
 import createCommand from '@/src/commands/create'
 import startCommand from '@/src/commands/start'
+import steamCommand from '@/src/commands/steam'
 import stopCommand from '@/src/commands/stop'
 import { AtlantisCommand } from '@/src/lib/command'
 
@@ -8,9 +9,10 @@ const program = new AtlantisCommand()
   .description(
     'Atlantis is a centralized repository for managing and maintaining our Linux server infrastructure.'
   )
-  .addCommand(createCommand)
   .addCommand(startCommand)
   .addCommand(stopCommand)
+  .addCommand(createCommand)
+  .addCommand(steamCommand)
 
 const args = process.argv.slice(2)
 
