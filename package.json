@@ -18,9 +18,10 @@
     "dev:update": "bun update --latest; cd cli; bun update --latest; cd ../api; uv sync --upgrade"
   },
   "devDependencies": {
-    "prettier": "^3.8.3",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "prettier-plugin-sql": "^0.19.2",
-    "supabase": "^2.100.1"
+    "prettier-plugin-sql": "^0.20.0",
+    "prettier": "^3.9.9",
+    "supabase": "^2.117.0",
+    "typescript": "^6"
   }
 }

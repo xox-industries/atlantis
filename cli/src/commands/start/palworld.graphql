@@ -1,0 +1,19 @@
+query ATL_CommandsStartPalworld_DisplayPalworld {
+  displayPalworld {
+    name
+    running
+    port
+  }
+}
+
+mutation ATL_CommandsStartPalworld_StartPalworld($instance: String!) {
+  startPalworld(instance: $instance) {
+    name
+    running
+    port
+  }
+}
+
+subscription ATL_CommandsStartPalworld_PalworldValidateApp {
+  palworldValidateApp
+}

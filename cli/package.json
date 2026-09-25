@@ -1,14 +1,46 @@
 {
   "name": "atlantis-cli",
-  "module": "index.ts",
+  "module": "index.tsx",
   "type": "module",
-  "dependencies": {
-    "@clack/prompts": "^1.7.0"
+  "scripts": {
+    "start": "bun index.tsx",
+    "typecheck": "bunx tsc --noEmit --project tsconfig.json",
+    "lint": "bunx eslint .",
+    "codegen": "bunx graphql-codegen --config graphql-codegen.js http://127.0.0.1:5000/graphql",
+    "codegen:production": "bunx graphql-codegen --config graphql-codegen.js http://127.0.0.1:59111/graphql"
   },
-  "peerDependencies": {
-    "typescript": "^5"
+  "dependencies": {
+    "@apollo/client": "^4.3.1",
+    "@clack/prompts": "^1.8.1",
+    "@graphql-codegen/cli": "^7.4.2",
+    "@graphql-codegen/typescript-generic-sdk": "^5.0.1",
+    "@graphql-tools/utils": "^12.0.1",
+    "apollo-upload-client": "^20.0.0",
+    "chalk": "^6.0.0",
+    "commander": "^15.0.0",
+    "graphql-tag": "^2.12.7",
+    "graphql-ws": "^6.2.2",
+    "graphql": "^17.0.2",
+    "ink": "^7.1.1",
+    "react": "^19.3.0",
+    "typescript": "^6",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@eslint/css": "^2.0.0",
+    "@eslint/eslintrc": "^3.3.7",
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^2.1.0",
+    "@eslint/markdown": "^8.0.3",
+    "@types/apollo-upload-client": "^19.0.0",
+    "@types/bun": "^1.4.2",
+    "@types/node": "^26.6.2",
+    "@types/react-dom": "19.3.0",
+    "@types/react": "^19.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint": "^9.39.4",
+    "globals": "^17.12.0",
+    "typescript-eslint": "^8.70.1"
   }
 }
