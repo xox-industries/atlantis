@@ -1,5 +1,6 @@
 import createCommand from '@/src/commands/create'
 import startCommand from '@/src/commands/start'
+import stopCommand from '@/src/commands/stop'
 import { AtlantisCommand } from '@/src/lib/command'
 
 const program = new AtlantisCommand()
@@ -9,6 +10,7 @@ const program = new AtlantisCommand()
   )
   .addCommand(createCommand)
   .addCommand(startCommand)
+  .addCommand(stopCommand)
 
 const args = process.argv.slice(2)
 

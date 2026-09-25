@@ -1,0 +1,15 @@
+query ATL_CommandsStopPalworld_DisplayPalworld {
+  displayPalworld {
+    name
+    running
+    port
+  }
+}
+
+mutation ATL_CommandsStopPalworld_StopPalworld($instance: String!) {
+  stopPalworld(instance: $instance) {
+    name
+    running
+    port
+  }
+}

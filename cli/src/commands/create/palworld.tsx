@@ -4,10 +4,16 @@ import * as p from '@clack/prompts'
 import chalk from 'chalk'
 
 export const createPalworldAction = async () => {
-  const { createPalworld: created } =
-    await graphQLClient.ATL_CommandsCreatePalworld_CreatePalworld()
-
-  p.log.success(`Palworld instance ${chalk.magentaBright(created.name)} created`)
+  const creating = p.spinner()
+  creating.start('Creating Palworld instance')
+  try {
+    const { createPalworld: created } =
+      await graphQLClient.ATL_CommandsCreatePalworld_CreatePalworld()
+    creating.stop(`Palworld instance ${chalk.magentaBright(created.name)} created`)
+  } catch (e) {
+    creating.cancel()
+    throw e
+  }
 }
 
 const createPalworldCommand = new AtlantisCommand('palworld')
