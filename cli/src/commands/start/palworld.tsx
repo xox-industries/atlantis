@@ -3,8 +3,9 @@ import { ensureNotCancelled } from '@/src/lib/prompts'
 import { graphQLClient } from '@/src/stores/graphql'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
+import { StartOptions } from '.'
 
-export const startPalworldAction = async () => {
+export const startPalworldAction = async (options: StartOptions) => {
   const { displayPalworld: instances } =
     await graphQLClient.ATL_CommandsStartPalworld_DisplayPalworld()
 
@@ -25,14 +26,16 @@ export const startPalworldAction = async () => {
     })
   )
 
-  const updating = p.taskLog({ title: 'Checking Palworld application', limit: 5 })
-  for await (const result of graphQLClient.ATL_CommandsStartPalworld_PalworldValidateApp()) {
-    const line = result.palworldValidateApp
-    if (line.trim().length > 0) {
-      updating.message(line)
+  if (!options.skipSteamValidate) {
+    const updating = p.taskLog({ title: 'Checking Palworld application', limit: 5 })
+    for await (const result of graphQLClient.ATL_CommandsStartPalworld_PalworldValidateApp()) {
+      const line = result.palworldValidateApp
+      if (line.trim().length > 0) {
+        updating.message(line)
+      }
     }
+    updating.success('Palworld application check complete')
   }
-  updating.success('Palworld application check complete')
 
   const starting = p.spinner()
   starting.start(`Starting Palworld instance ${chalk.magentaBright(selected)}`)
@@ -52,6 +55,7 @@ export const startPalworldAction = async () => {
 
 const startPalworldCommand = new AtlantisCommand('palworld')
   .description('Start a Palworld instance')
+  .option('--skip-steam-validate', 'Skip Steam validation before starting')
   .action(startPalworldAction)
 
 export default startPalworldCommand

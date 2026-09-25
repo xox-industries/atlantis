@@ -3,7 +3,11 @@ import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import * as p from '@clack/prompts'
 
-const action = async () => {
+export type StartOptions = {
+  skipSteamValidate?: boolean
+}
+
+const action = async (options: StartOptions) => {
   const choice = ensureNotCancelled(
     await p.select({
       message: 'Select a service to start',
@@ -12,12 +16,13 @@ const action = async () => {
   )
 
   if (choice === 'palworld') {
-    await startPalworldAction()
+    await startPalworldAction(options)
   }
 }
 
 const startCommand = new AtlantisCommand('start')
   .description('Show startable services')
+  .option('--skip-steam-validate', 'Skip Steam validation before starting')
   .action(action)
   .addCommand(startPalworldCommand)
 

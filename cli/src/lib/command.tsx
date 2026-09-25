@@ -19,6 +19,7 @@ class CustomHelp extends Help {
     const description = helper.commandDescription(cmd)
     const usage = helper.commandUsage(cmd)
     const commands = helper.visibleCommands(cmd)
+    const options = helper.visibleOptions(cmd)
 
     const commandTermWidth = Math.max(
       ...commands.map((c) => {
@@ -39,6 +40,20 @@ class CustomHelp extends Help {
       return `  ${paddedTerm}  ${gray(desc)}`
     })
 
+    const optionTermWidth = Math.max(
+      ...options.map((o) => helper.optionTerm(o).length)
+    )
+
+    const optionLines = options.map((o) => {
+      const term = helper.optionTerm(o)
+      const coloredTerm = cyan(term)
+      const paddedTerm = coloredTerm.padEnd(
+        optionTermWidth + (coloredTerm.length - term.length)
+      )
+      const desc = helper.optionDescription(o)
+      return `  ${paddedTerm}  ${gray(desc)}`
+    })
+
     const sections: string[] = []
 
     if (description) {
@@ -48,6 +63,12 @@ class CustomHelp extends Help {
 
     sections.push(`${bold('Usage:')} ${usage}`)
     sections.push('')
+
+    if (optionLines.length > 0) {
+      sections.push(bold('Flags:'))
+      sections.push(...optionLines)
+      sections.push('')
+    }
 
     if (commandLines.length > 0) {
       sections.push(bold('Commands:'))
@@ -72,8 +93,10 @@ export class AtlantisCommand extends Command {
     return new CustomHelp()
   }
 
-  override action(fn: (...args: unknown[]) => void | Promise<void>): this {
-    return super.action(async (...args: unknown[]) => {
+  override action<TArgs extends unknown[]>(
+    fn: (...args: TArgs) => void | Promise<void>
+  ): this {
+    return super.action(async (...args: TArgs) => {
       try {
         await fn(...args)
       } catch (e) {
