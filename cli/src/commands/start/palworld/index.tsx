@@ -1,9 +1,9 @@
+import { StartOptions } from '@/src/commands/start'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { graphQLClient } from '@/src/stores/graphql'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
-import { StartOptions } from '.'
 
 export const startPalworldAction = async (options: StartOptions) => {
   const { displayPalworld: instances } =
