@@ -64,6 +64,8 @@ class Docker:
             "Cmd": command,
             "HostConfig": host_config,
             "Env": [f"{k}={v}" for k, v in container_env.items()],
+            "OpenStdin": True,
+            "Tty": True,
         }
 
         if labels:
