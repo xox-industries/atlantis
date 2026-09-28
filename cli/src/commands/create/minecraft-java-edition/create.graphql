@@ -1,0 +1,43 @@
+mutation ATL_CommandsCreateMinecraftJavaEdition_CreateMinecraftJavaEdition(
+  $path: String!
+  $minecraftVersion: String!
+  $modloaderType: String!
+  $modloaderVersion: String!
+  $ram: Int!
+) {
+  createMinecraftJavaEdition(
+    path: $path
+    minecraftVersion: $minecraftVersion
+    modloaderType: $modloaderType
+    modloaderVersion: $modloaderVersion
+    ram: $ram
+  ) {
+    path
+    minecraftVersion
+    modLoader {
+      type
+      version
+    }
+    ram
+    manifestType
+    manifestVersion
+  }
+}
+
+query ATL_CommandsCreateMinecraftJavaEdition_DisplayMinecraftJavaEditionDirectories {
+  displayMinecraftJavaEditionDirectories
+}
+
+query ATL_CommandsCreateMinecraftJavaEdition_LatestMinecraftJavaEditionMinecraftVersion {
+  latestMinecraftJavaEditionMinecraftVersion
+}
+
+query ATL_CommandsCreateMinecraftJavaEdition_LatestMinecraftJavaEditionModloaderVersion(
+  $modloaderType: String!
+  $minecraftVersion: String!
+) {
+  latestMinecraftJavaEditionModloaderVersion(
+    modloaderType: $modloaderType
+    minecraftVersion: $minecraftVersion
+  )
+}

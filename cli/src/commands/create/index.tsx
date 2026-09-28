@@ -1,3 +1,6 @@
+import minecraftJavaEditionCommand, {
+  minecraftJavaEditionCommandAction,
+} from '@/src/commands/create/minecraft-java-edition'
 import createPalworldCommand, {
   createPalworldAction,
 } from '@/src/commands/create/palworld'
@@ -9,18 +12,37 @@ const action = async () => {
   const choice = ensureNotCancelled(
     await p.select({
       message: 'Select a service to create',
-      options: [{ value: 'palworld', label: 'Palworld (Windows)' }],
+      options: [
+        {
+          value: 'minecraft-java-edition',
+          label: 'Minecraft (Java Edition)',
+        },
+        {
+          value: 'palworld',
+          label: 'Palworld (Windows)',
+        },
+      ],
     })
   )
 
-  if (choice === 'palworld') {
-    await createPalworldAction()
+  switch (choice) {
+    case 'minecraft-java-edition':
+      await minecraftJavaEditionCommandAction()
+      break
+
+    case 'palworld':
+      await createPalworldAction()
+      break
+
+    default:
+      break
   }
 }
 
 const createCommand = new AtlantisCommand('create')
   .description('Show creatable services')
   .action(action)
+  .addCommand(minecraftJavaEditionCommand)
   .addCommand(createPalworldCommand)
 
 export default createCommand

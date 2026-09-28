@@ -40,9 +40,7 @@ class CustomHelp extends Help {
       return `  ${paddedTerm}  ${gray(desc)}`
     })
 
-    const optionTermWidth = Math.max(
-      ...options.map((o) => helper.optionTerm(o).length)
-    )
+    const optionTermWidth = Math.max(...options.map((o) => helper.optionTerm(o).length))
 
     const optionLines = options.map((o) => {
       const term = helper.optionTerm(o)
@@ -64,15 +62,15 @@ class CustomHelp extends Help {
     sections.push(`${bold('Usage:')} ${usage}`)
     sections.push('')
 
+    if (commandLines.length > 0) {
+      sections.push(bold('Commands:'))
+      sections.push(...commandLines)
+    }
+
     if (optionLines.length > 0) {
       sections.push(bold('Flags:'))
       sections.push(...optionLines)
       sections.push('')
-    }
-
-    if (commandLines.length > 0) {
-      sections.push(bold('Commands:'))
-      sections.push(...commandLines)
     }
 
     return sections.join('\n') + '\n'

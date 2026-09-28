@@ -15,6 +15,7 @@ from supabase import create_async_client as create_supabase_client
 from src.app import App
 from src.apt import Apt
 from src.docker import Docker
+from src.minecraft_java_edition import MinecraftJavaEdition
 from src.palworld import Palworld
 from src.persistence import Persistence
 from src.route import create_context, create_schema
@@ -48,6 +49,7 @@ async def lifespan(app: App) -> AsyncGenerator[None]:
     app.apt = Apt(app)
     app.steam = Steam(app)
     app.docker = Docker(app)
+    app.minecraft_java_edition = MinecraftJavaEdition(app)
     app.palworld = Palworld(app)
 
     await app.ensure_wineprefix()

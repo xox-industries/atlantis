@@ -1,0 +1,213 @@
+from __future__ import annotations
+
+import asyncio
+import enum
+import json
+from pathlib import Path
+from typing import TYPE_CHECKING, TypedDict, Unpack
+
+from src.lib.path_utils import list_directories
+from src.minecraft_java_edition.error import (
+    InvalidManifestPathError,
+    ManifestAlreadyExistsError,
+    ManifestNotFoundError,
+)
+from src.minecraft_java_edition.model import PersistedMinecraftJavaEditionManifest
+from src.minecraft_java_edition.versions import (
+    get_latest_minecraft_version,
+    get_latest_modloader_version,
+    validate_version,
+)
+from src.persistence.mixin.utils import LazyAwaitable
+
+if TYPE_CHECKING:
+    from src.app import App
+
+
+class ModLoaderType(enum.StrEnum):
+    FORGE = "forge"
+    FABRIC = "fabric"
+    NEOFORGE = "neoforge"
+
+
+class MinecraftJavaEdition:
+    DATA_DIR = Path("/mnt/data/minecraft-java-edition")
+    MANIFEST_FILE_NAME = "manifest.json"
+
+    def __init__(self, app: App, /) -> None:
+        self._app = app
+        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    def _resolve_path(self, path: str, /) -> Path:
+        if not path:
+            return self.DATA_DIR
+
+        if path.startswith("/"):
+            raise InvalidManifestPathError(path)
+
+        resolved = self.DATA_DIR.joinpath(path).resolve()
+        if not str(resolved).startswith(str(self.DATA_DIR.resolve())):
+            raise InvalidManifestPathError(path)
+
+        return resolved
+
+    def _validate_modloader_type(self, modloader_type: str, /) -> None:
+        if modloader_type not in {member.value for member in ModLoaderType}:
+            msg = f"Modloader type must be one of: {', '.join(sorted(ModLoaderType))}"
+            raise ValueError(msg)
+
+    async def display_directories(self) -> list[str]:
+        return await list_directories(self.DATA_DIR, max_depth=2)
+
+    async def latest_minecraft_version(self) -> str:
+        return await get_latest_minecraft_version()
+
+    async def latest_modloader_version(
+        self,
+        modloader_type: str,
+        minecraft_version: str,
+    ) -> str:
+        return await get_latest_modloader_version(modloader_type, minecraft_version)
+
+    async def validate_version(
+        self,
+        version_type: str,
+        minecraft_version: str,
+        modloader_version: str | None = None,
+    ) -> bool:
+        return await validate_version(version_type, minecraft_version, modloader_version)
+
+    async def display_manifests(self) -> list[PersistedMinecraftJavaEditionManifest]:
+        def _walk() -> list[PersistedMinecraftJavaEditionManifest]:
+            manifests: list[PersistedMinecraftJavaEditionManifest] = []
+            for manifest_path in sorted(self.DATA_DIR.rglob(self.MANIFEST_FILE_NAME)):
+                relative_path = self._relative_path(manifest_path.parent)
+                manifests.append(self._read_sync(manifest_path, relative_path))
+            return manifests
+
+        return await asyncio.to_thread(_walk)
+
+    class CreateManifestArgs(TypedDict, total=False):
+        path: str
+        minecraft_version: str
+        modloader_type: str
+        modloader_version: str
+        ram: int
+
+    async def create_manifest(
+        self,
+        **kwargs: Unpack[CreateManifestArgs],
+    ) -> PersistedMinecraftJavaEditionManifest:
+        path = kwargs["path"]
+        minecraft_version = kwargs["minecraft_version"]
+        modloader_type = kwargs["modloader_type"]
+        modloader_version = kwargs["modloader_version"]
+        ram = kwargs["ram"]
+
+        self._validate_modloader_type(modloader_type)
+        target_dir = self._resolve_path(path)
+        manifest_path = target_dir.joinpath(self.MANIFEST_FILE_NAME)
+
+        if manifest_path.exists():
+            raise ManifestAlreadyExistsError(self._relative_path(target_dir))
+
+        def _write() -> PersistedMinecraftJavaEditionManifest:
+            target_dir.mkdir(parents=True, exist_ok=True)
+            manifest = PersistedMinecraftJavaEditionManifest(
+                path=self._relative_path(target_dir),
+                minecraft_version=minecraft_version,
+                modloader_type=modloader_type,
+                modloader_version=modloader_version,
+                ram=ram,
+            )
+            manifest_path.write_text(
+                json.dumps(manifest.to_dict(), indent=2) + "\n",
+                encoding="utf-8",
+            )
+            return manifest
+
+        return await asyncio.to_thread(_write)
+
+    class UpdateManifestArgs(TypedDict, total=False):
+        minecraft_version: str
+        modloader_type: str
+        modloader_version: str
+        ram: int
+
+    async def update_manifest(
+        self,
+        path: str,
+        /,
+        **kwargs: Unpack[UpdateManifestArgs],
+    ) -> LazyAwaitable[PersistedMinecraftJavaEditionManifest]:
+        target_dir = self._resolve_path(path)
+        manifest_path = target_dir.joinpath(self.MANIFEST_FILE_NAME)
+
+        if not manifest_path.exists():
+            raise ManifestNotFoundError(self._relative_path(target_dir))
+
+        existing = await asyncio.to_thread(
+            self._read_sync,
+            manifest_path,
+            self._relative_path(target_dir),
+        )
+
+        minecraft_version = kwargs.get(
+            "minecraft_version",
+            existing.minecraft_version,
+        )
+        modloader_type = kwargs.get(
+            "modloader_type",
+            existing.modloader_type,
+        )
+        modloader_version = kwargs.get(
+            "modloader_version",
+            existing.modloader_version,
+        )
+        ram = kwargs.get("ram", existing.ram)
+
+        self._validate_modloader_type(modloader_type)
+
+        def _write() -> None:
+            manifest = PersistedMinecraftJavaEditionManifest(
+                path=self._relative_path(target_dir),
+                minecraft_version=minecraft_version,
+                modloader_type=modloader_type,
+                modloader_version=modloader_version,
+                ram=ram,
+            )
+            manifest_path.write_text(
+                json.dumps(manifest.to_dict(), indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+        await asyncio.to_thread(_write)
+
+        async def _query() -> PersistedMinecraftJavaEditionManifest:
+            return await asyncio.to_thread(
+                self._read_sync,
+                manifest_path,
+                self._relative_path(target_dir),
+            )
+
+        return LazyAwaitable(_query())
+
+    def _relative_path(self, absolute_path: Path, /) -> str:
+        relative = absolute_path.relative_to(self.DATA_DIR.resolve())
+        return str(relative) if str(relative) != "." else ""
+
+    def _read_sync(
+        self,
+        manifest_path: Path,
+        relative_path: str,
+    ) -> PersistedMinecraftJavaEditionManifest:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        minecraft = data["minecraft"]
+        mod_loader = minecraft["modLoader"]
+        return PersistedMinecraftJavaEditionManifest(
+            path=relative_path,
+            minecraft_version=minecraft["version"],
+            modloader_type=mod_loader["type"],
+            modloader_version=mod_loader["version"],
+            ram=minecraft["ram"],
+        )

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     from src.apt import Apt
     from src.docker import Docker
+    from src.minecraft_java_edition import MinecraftJavaEdition
     from src.palworld import Palworld
     from src.persistence import Persistence
     from src.steam import Steam
@@ -25,6 +26,19 @@ class App(FastAPI):
 
     DATA_DIR = Path("/mnt/data")
     WINE_DIR = DATA_DIR.joinpath(".wine")
+
+    env: Literal["production", "development"]
+    supabase: SupabaseClient
+    redis: Redis
+    persistence: Persistence
+    supabase_database_pool: PgPool
+
+    apt: Apt
+    docker: Docker
+    steam: Steam
+
+    minecraft_java_edition: MinecraftJavaEdition
+    palworld: Palworld
 
     @classmethod
     def get_host_data_dir(cls) -> Path:
@@ -74,15 +88,3 @@ class App(FastAPI):
         )
         await process.wait()
         marker.touch()
-
-    env: Literal["production", "development"]
-    supabase: SupabaseClient
-    redis: Redis
-    persistence: Persistence
-    supabase_database_pool: PgPool
-
-    apt: Apt
-    docker: Docker
-    steam: Steam
-
-    palworld: Palworld
