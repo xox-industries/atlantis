@@ -22,6 +22,10 @@ RUN dpkg --add-architecture i386 && \
     lib32gcc-s1 \
     libcurl4 \
     lsb-release \
+    openjdk-8-jdk \
+    openjdk-17-jdk \
+    openjdk-21-jdk \
+    openjdk-25-jdk \
     software-properties-common \
     steam-libs-i386 \
     steamcmd \

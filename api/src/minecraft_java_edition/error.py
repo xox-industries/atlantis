@@ -20,3 +20,17 @@ class ManifestAlreadyExistsError(ValueError):
 
     def __init__(self, path: str) -> None:
         super().__init__(f"Manifest already exists at {path!r}")
+
+
+class InstanceAlreadyRunningError(RuntimeError):
+    """Raised when the requested instance is already running."""
+
+    def __init__(self, instance: str) -> None:
+        super().__init__(f"Instance {instance!r} is already running")
+
+
+class InstanceNotFoundError(ValueError):
+    """Raised when the requested instance does not exist."""
+
+    def __init__(self, instance: str) -> None:
+        super().__init__(f"Instance {instance!r} does not exist")

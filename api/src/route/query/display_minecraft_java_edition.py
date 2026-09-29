@@ -4,7 +4,10 @@ import strawberry
 from strawberry.types import Info
 
 from src.route.context import AppContext
-from src.route.resolve.minecraft_java_edition import MinecraftJavaEditionManifest
+from src.route.resolve.minecraft_java_edition import (
+    MinecraftJavaEditionInstance,
+    MinecraftJavaEditionManifest,
+)
 
 
 @strawberry.type
@@ -16,6 +19,21 @@ class DisplayMinecraftJavaEditionType:
     ) -> list[MinecraftJavaEditionManifest]:
         manifests = await info.context.app.minecraft_java_edition.display_manifests()
         return [MinecraftJavaEditionManifest.construct_model(manifest) for manifest in manifests]
+
+    @strawberry.field
+    async def display_minecraft_java_edition_instances(
+        self,
+        info: Info[AppContext],
+    ) -> list[MinecraftJavaEditionInstance]:
+        manifests = await info.context.app.minecraft_java_edition.display_manifests()
+        return [
+            MinecraftJavaEditionInstance(
+                path=manifest.path,
+                running=await info.context.app.minecraft_java_edition.is_running(manifest.path),
+                port=await info.context.app.minecraft_java_edition.get_port(manifest.path),
+            )
+            for manifest in manifests
+        ]
 
     @strawberry.field
     async def display_minecraft_java_edition_directories(

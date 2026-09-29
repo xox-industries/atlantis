@@ -1,3 +1,6 @@
+import startMinecraftJavaEditionCommand, {
+  startMinecraftJavaEditionAction,
+} from '@/src/commands/start/minecraft-java-edition'
 import startPalworldCommand, { startPalworldAction } from '@/src/commands/start/palworld'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
@@ -11,12 +14,24 @@ const action = async (options: StartOptions) => {
   const choice = ensureNotCancelled(
     await p.select({
       message: 'Select a service to start',
-      options: [{ value: 'palworld', label: `Palworld (Windows)` }],
+      options: [
+        { value: 'minecraft-java-edition', label: 'Minecraft (Java Edition)' },
+        { value: 'palworld', label: 'Palworld (Windows)' },
+      ],
     })
   )
 
-  if (choice === 'palworld') {
-    await startPalworldAction(options)
+  switch (choice) {
+    case 'minecraft-java-edition':
+      await startMinecraftJavaEditionAction()
+      break
+
+    case 'palworld':
+      await startPalworldAction(options)
+      break
+
+    default:
+      break
   }
 }
 
@@ -25,5 +40,6 @@ const startCommand = new AtlantisCommand('start')
   .option('--skip-steam-validate', 'Skip Steam validation before starting')
   .action(action)
   .addCommand(startPalworldCommand)
+  .addCommand(startMinecraftJavaEditionCommand)
 
 export default startCommand

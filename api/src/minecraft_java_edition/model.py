@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PersistedMinecraftJavaEditionManifest(BaseModel):
@@ -9,6 +9,8 @@ class PersistedMinecraftJavaEditionManifest(BaseModel):
     modloader_type: str
     modloader_version: str
     ram: int
+    java_version: int
+    jvm_arguments: list[str] = Field(default_factory=list)
 
     @property
     def manifest_type(self) -> str:
@@ -27,6 +29,8 @@ class PersistedMinecraftJavaEditionManifest(BaseModel):
                     "version": self.modloader_version,
                 },
                 "ram": self.ram,
+                "javaVersion": self.java_version,
+                "jvmArguments": self.jvm_arguments,
             },
             "manifestType": self.manifest_type,
             "manifestVersion": self.manifest_version,

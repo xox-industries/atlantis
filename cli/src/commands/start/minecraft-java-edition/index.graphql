@@ -1,0 +1,13 @@
+query ATL_CommandsStartMinecraftJavaEdition_DisplayMinecraftJavaEditionInstances {
+  displayMinecraftJavaEditionInstances {
+    path
+    running
+    port
+  }
+}
+
+subscription ATL_CommandsStartMinecraftJavaEdition_StartMinecraftJavaEdition(
+  $path: String!
+) {
+  startMinecraftJavaEdition(path: $path)
+}

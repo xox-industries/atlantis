@@ -4,7 +4,6 @@ import re
 from typing import Any
 
 import httpx
-from bs4 import BeautifulSoup
 
 
 class VersionValidationError(ValueError):
@@ -37,7 +36,7 @@ class ExternalServiceError(VersionValidationError):
 
 _MINECRAFT_VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 _FABRIC_LOADER_VERSIONS_URL = "https://meta.fabricmc.net/v2/versions/loader"
-_FORGE_INDEX_URL_TEMPLATE = "https://files.minecraftforge.net/net/minecraftforge/forge/index_{minecraft_version}.html"
+_FORGE_PROMOTIONS_URL = "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json"
 _FORGE_INSTALLER_URL_TEMPLATE = (
     "https://maven.minecraftforge.net/net/minecraftforge/forge/"
     "{minecraft_version}-{modloader_version}/"
@@ -133,40 +132,15 @@ async def _validate_fabric_version(modloader_version: str) -> bool:
 
 
 async def _get_latest_forge_version(minecraft_version: str) -> str:
-    url = _FORGE_INDEX_URL_TEMPLATE.format(minecraft_version=minecraft_version)
-    html = await _fetch_text(url, service="Forge")
-    soup = BeautifulSoup(html, "html.parser")
-
-    promo = soup.select_one("i.fa.promo-latest")
-    if promo is None:
+    data = await _fetch_json(_FORGE_PROMOTIONS_URL, service="Forge")
+    promos = data.get("promos", {})
+    version = promos.get(f"{minecraft_version}-latest")
+    if not isinstance(version, str):
         raise VersionNotFoundError(
             context=_FORGE_VERSION_CONTEXT,
             version=minecraft_version,
         )
-
-    parent = promo.find_parent()
-    if parent is None:
-        raise VersionNotFoundError(
-            context=_FORGE_VERSION_CONTEXT,
-            version=minecraft_version,
-        )
-
-    text = parent.select_one("br + small")
-    if text is None:
-        raise VersionNotFoundError(
-            context=_FORGE_VERSION_CONTEXT,
-            version=minecraft_version,
-        )
-
-    version_text = text.get_text(strip=True).replace(" ", "")
-    parts = version_text.split("-")
-    if len(parts) < _MINECRAFT_VERSION_PARTS:
-        raise VersionNotFoundError(
-            context=_FORGE_VERSION_CONTEXT,
-            version=minecraft_version,
-        )
-
-    return parts[1]
+    return version
 
 
 async def _get_latest_neoforge_version(minecraft_version: str) -> str:
@@ -177,9 +151,17 @@ async def _get_latest_neoforge_version(minecraft_version: str) -> str:
             version=minecraft_version,
         )
 
-    minor = parts[1]
-    patch = parts[2] if len(parts) > _MINECRAFT_VERSION_PARTS else "0"
-    prefix = f"{minor}.{patch}."
+    # NeoForge versions mirror the Minecraft version, but legacy Minecraft
+    # releases (1.x.y) drop the leading "1." in the NeoForge version number.
+    # Modern releases (26.x, 26.x.y) keep the same leading segment and use a
+    # four-segment NeoForge version (e.g. 26.1.2.42).
+    if parts[0] == "1":
+        prefix_parts = [parts[1]]
+        prefix_parts.append(parts[2] if len(parts) > _MINECRAFT_VERSION_PARTS else "0")
+    else:
+        prefix_parts = [parts[0], parts[1]]
+
+    prefix = f"{'.'.join(prefix_parts)}."
 
     data = await _fetch_json(_NEOFORGE_VERSIONS_URL, service="NeoForge")
     versions = data.get("versions", [])

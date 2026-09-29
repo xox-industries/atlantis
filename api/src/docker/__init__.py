@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import os
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import aiodocker
 from aiodocker.containers import DockerContainer
@@ -16,6 +19,7 @@ class Docker:
     def __init__(self, app: App, /) -> None:
         self._app = app
         self._docker = aiodocker.Docker()
+        self._port_lock = asyncio.Lock()
 
     async def run(
         self,
@@ -112,15 +116,33 @@ class Docker:
             raise
 
         info = await container.show()
-        port_bindings = info.get("HostConfig", {}).get("PortBindings", {})
-        for key, bindings in port_bindings.items():
-            if key.endswith(f"/{protocol}") and bindings:
-                host_port = bindings[0].get("HostPort")
-                if host_port is not None:
-                    return int(host_port)
+        network_port = self._extract_host_port(
+            info.get("NetworkSettings", {}).get("Ports", {}),
+            protocol,
+        )
+        if network_port is not None:
+            return network_port
 
+        return self._extract_host_port(
+            info.get("HostConfig", {}).get("PortBindings", {}),
+            protocol,
+        )
+
+    def _extract_host_port(self, port_map: dict[str, JSONValue], protocol: str, /) -> int | None:
+        for container_port_proto, bindings in port_map.items():
+            if not isinstance(container_port_proto, str) or not container_port_proto.endswith(f"/{protocol}"):
+                continue
+            if not isinstance(bindings, list):
+                continue
+            for binding in bindings:
+                if not isinstance(binding, dict):
+                    continue
+                host_port = binding.get("HostPort")
+                if isinstance(host_port, str):
+                    return int(host_port)
         return None
 
+    @asynccontextmanager
     async def find_free_port(
         self,
         *,
@@ -128,29 +150,37 @@ class Docker:
         game: str,
         protocol: str = "udp",
         max_attempts: int = 100,
-    ) -> int:
-        containers = await self._docker.containers.list(
-            all=True,
-            filters={"label": [f"atlantis.game={game}"]},
-        )
+    ) -> AsyncGenerator[int]:
+        """Yield a free host port while holding the allocation lock.
 
-        used_ports: set[int] = set()
-        for container in containers:
-            info = await container.show()
-            ports = info.get("NetworkSettings", {}).get("Ports", {})
-            for port_proto, bindings in ports.items():
-                if not port_proto.endswith(f"/{protocol}"):
-                    continue
+        The lock is held for the duration of the ``async with`` block so that
+        the port cannot be claimed by another caller before the container is
+        created.
+        """
+        async with self._port_lock:
+            containers = await self._docker.containers.list(
+                all=True,
+                filters={"label": [f"atlantis.game={game}"]},
+            )
 
-                for binding in bindings or []:
-                    host_port = binding.get("HostPort")
-                    if host_port is not None:
-                        used_ports.add(int(host_port))
+            used_ports: set[int] = set()
+            for container in containers:
+                info = await container.show()
+                ports = info.get("NetworkSettings", {}).get("Ports", {})
+                for port_proto, bindings in ports.items():
+                    if not port_proto.endswith(f"/{protocol}"):
+                        continue
 
-        for offset in range(max_attempts):
-            candidate = base + offset
-            if candidate not in used_ports:
-                return candidate
+                    for binding in bindings or []:
+                        host_port = binding.get("HostPort")
+                        if host_port is not None:
+                            used_ports.add(int(host_port))
 
-        msg = f"No free port found after {max_attempts} attempts starting from {base}"
-        raise RuntimeError(msg)
+            for offset in range(max_attempts):
+                candidate = base + offset
+                if candidate not in used_ports:
+                    yield candidate
+                    return
+
+            msg = f"No free port found after {max_attempts} attempts starting from {base}"
+            raise RuntimeError(msg)

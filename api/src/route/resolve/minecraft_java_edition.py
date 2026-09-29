@@ -42,9 +42,24 @@ class MinecraftJavaEditionManifest:
         return self._data.ram
 
     @strawberry.field
+    def java_version(self) -> int:
+        return self._data.java_version
+
+    @strawberry.field
+    def jvm_arguments(self) -> list[str]:
+        return self._data.jvm_arguments
+
+    @strawberry.field
     def manifest_type(self) -> str:
         return self._data.manifest_type
 
     @strawberry.field
     def manifest_version(self) -> int:
         return self._data.manifest_version
+
+
+@strawberry.type
+class MinecraftJavaEditionInstance:
+    path: str
+    running: bool
+    port: int | None

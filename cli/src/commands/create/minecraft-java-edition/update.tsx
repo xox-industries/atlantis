@@ -81,10 +81,22 @@ export const updateMinecraftJavaEditionAction = async () => {
     })
   )
 
+  const { latestMinecraftJavaEditionModloaderVersion: latestModloaderVersion } =
+    await graphQLClient.ATL_CommandsCreateMinecraftJavaEdition_LatestMinecraftJavaEditionModloaderVersion(
+      {
+        modloaderType: modloaderType,
+        minecraftVersion: minecraftVersion.trim(),
+      }
+    )
+
   const modloaderVersion = ensureNotCancelled(
     await p.text({
       message: 'Modloader version',
-      initialValue: manifest.modLoader.version,
+      initialValue:
+        modloaderType === manifest.modLoader.type &&
+        minecraftVersion === manifest.minecraftVersion
+          ? manifest.modLoader.version
+          : latestModloaderVersion,
       validate: async (value) => {
         if (value === undefined || value.trim().length === 0) {
           return 'Modloader version is required'

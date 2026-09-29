@@ -6,7 +6,10 @@ import strawberry
 from strawberry.types import Info
 
 from src.route.context import AppContext
-from src.route.resolve.minecraft_java_edition import MinecraftJavaEditionManifest
+from src.route.resolve.minecraft_java_edition import (
+    MinecraftJavaEditionInstance,
+    MinecraftJavaEditionManifest,
+)
 
 UNSET = strawberry.UNSET
 
@@ -60,3 +63,16 @@ class MutationMinecraftJavaEditionType:
         )
         manifest = await lazy_manifest
         return MinecraftJavaEditionManifest.construct_model(manifest)
+
+    @strawberry.mutation
+    async def stop_minecraft_java_edition(
+        self,
+        path: str,
+        info: Info[AppContext],
+    ) -> MinecraftJavaEditionInstance:
+        await info.context.app.minecraft_java_edition.stop(path)
+        return MinecraftJavaEditionInstance(
+            path=path,
+            running=False,
+            port=None,
+        )

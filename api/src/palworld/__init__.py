@@ -87,12 +87,6 @@ class Palworld:
 
         image = os.environ["DOCKER_IMAGE"]
 
-        port = await self._app.docker.find_free_port(
-            base=self.BASE_PORT,
-            game="palworld",
-            protocol="udp",
-        )
-
         name = self.get_instance_name(instance)
         server_log = target.joinpath("server.log")
 
@@ -113,9 +107,9 @@ class Palworld:
                 "export WINEDEBUG=-all && "
                 "echo 'Booting wineprefix' && "
                 "xvfb-run -a wineboot -u && "
-                f"echo 'Starting PalServer on port {port}' && "
+                f"echo 'Starting PalServer on port {self.BASE_PORT}' && "
                 f"xvfb-run -a wine {self.CONTAINER_APP_DIR.joinpath('PalServer.exe')} "
-                f"-publiclobby -port={port} "
+                f"-publiclobby -port={self.BASE_PORT} "
                 f"> {server_log} 2>&1"
             ),
         ]
@@ -128,21 +122,26 @@ class Palworld:
             str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR),
             str(App.get_host_path(self._app.WINE_DIR)): str(self._app.WINE_DIR),
         }
-        ports = {f"{port}/udp": ("0.0.0.0", port)}  # noqa: S104
         labels = {
             "atlantis.game": "palworld",
             "atlantis.instance": instance,
         }
 
-        return await self._app.docker.run(
-            name=name,
-            image=image,
-            command=command,
-            volumes=volumes,
-            read_only_volumes=read_only_volumes,
-            ports=ports,
-            labels=labels,
-        )
+        async with self._app.docker.find_free_port(
+            base=self.BASE_PORT,
+            game="palworld",
+            protocol="udp",
+        ) as port:
+            ports = {f"{self.BASE_PORT}/udp": ("0.0.0.0", port)}  # noqa: S104
+            return await self._app.docker.run(
+                name=name,
+                image=image,
+                command=command,
+                volumes=volumes,
+                read_only_volumes=read_only_volumes,
+                ports=ports,
+                labels=labels,
+            )
 
     async def stop(self, instance: str, /) -> str:
         name = self.get_instance_name(instance)

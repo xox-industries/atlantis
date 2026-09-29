@@ -13,14 +13,8 @@ const action = async () => {
     await p.select({
       message: 'Select a service to create',
       options: [
-        {
-          value: 'minecraft-java-edition',
-          label: 'Minecraft (Java Edition)',
-        },
-        {
-          value: 'palworld',
-          label: 'Palworld (Windows)',
-        },
+        { value: 'minecraft-java-edition', label: 'Minecraft (Java Edition)' },
+        { value: 'palworld', label: 'Palworld (Windows)' },
       ],
     })
   )

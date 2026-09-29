@@ -15,7 +15,8 @@
     "dev:down": "docker compose -f docker-compose.dev.yml down; bun run db:stop",
     "dev:clean": "rm -rf node_modules; cd cli; rm -rf node_modules; cd ../api; rm -rf .venv; cd ../supabase; rm -rf .branches; rm -rf .temp",
     "dev:install": "bun install; cd cli; bun install; cd ../api; uv sync",
-    "dev:update": "bun update --latest; cd cli; bun update --latest; cd ../api; uv sync --upgrade"
+    "dev:update": "bun update --latest; cd cli; bun update --latest; cd ../api; uv sync --upgrade",
+    "api:test": "sh -c 'export UID=$(id -u) GID=$(id -g); cd api; uv run pytest test -v --tb=long -s -n 4'"
   },
   "devDependencies": {
     "prettier-plugin-organize-imports": "^4.3.0",
