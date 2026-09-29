@@ -47,6 +47,8 @@ export const startPalworldAction = async (options: StartOptions) => {
     starting.stop(
       `Palworld instance ${chalk.magentaBright(started.name)} started ${chalk.gray(`on port ${started.port}`)}`
     )
+
+    return started.containerName
   } catch (e) {
     starting.cancel()
     throw e
@@ -56,6 +58,8 @@ export const startPalworldAction = async (options: StartOptions) => {
 const startPalworldCommand = new AtlantisCommand('palworld')
   .description('Start a Palworld instance')
   .option('--skip-steam-validate', 'Skip Steam validation before starting')
-  .action(startPalworldAction)
+  .action(async (options: StartOptions) => {
+    await startPalworldAction(options)
+  })
 
 export default startPalworldCommand

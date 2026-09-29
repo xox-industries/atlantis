@@ -1,6 +1,7 @@
 query ATL_CommandsStartPalworld_DisplayPalworld {
   displayPalworld {
     name
+    containerName
     running
     port
   }
@@ -9,6 +10,7 @@ query ATL_CommandsStartPalworld_DisplayPalworld {
 mutation ATL_CommandsStartPalworld_StartPalworld($instance: String!) {
   startPalworld(instance: $instance) {
     name
+    containerName
     running
     port
   }

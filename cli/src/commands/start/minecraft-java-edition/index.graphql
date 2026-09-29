@@ -1,8 +1,9 @@
 query ATL_CommandsStartMinecraftJavaEdition_DisplayMinecraftJavaEditionInstances {
   displayMinecraftJavaEditionInstances {
     path
-    running
+    containerName
     port
+    running
   }
 }
 

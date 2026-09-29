@@ -225,7 +225,7 @@ class MinecraftJavaEdition:
         if await self.is_running(path):
             raise InstanceAlreadyRunningError(path)
 
-        await self.stop(path)
+        await self._app.docker.stop(self._get_instance_name(path))
 
         manifest = await asyncio.to_thread(
             self._read_sync,
@@ -264,9 +264,41 @@ class MinecraftJavaEdition:
             )
             yield f"Started on port {external_port}"
 
-    async def stop(self, path: str, /) -> None:
-        name = self._get_instance_name(path)
-        await self._app.docker.stop(name)
+    def get_container_name(self, path: str, /) -> str:
+        return self._app.docker.get_container_name(self._get_instance_name(path))
+
+    async def stop(self, path: str, /) -> AsyncGenerator[str]:
+        container = await self._app.docker.get_container(self._get_instance_name(path))
+        if container is None:
+            yield "Container not found"
+            return
+
+        info = await container.show()
+        if not info.get("State", {}).get("Running", False):
+            yield "Instance is not running"
+            await container.delete(force=True)
+            return
+
+        stream = container.attach(stdin=True, stdout=True, stderr=True)
+        try:
+            yield "Attaching to container and sending stop command"
+            command = b"stop\n"
+            await stream.write_in(command)
+
+            while True:
+                msg = await stream.read_out()
+                if msg is None:
+                    break
+                text = msg.data.decode("utf-8", errors="replace")
+                if text:
+                    yield text
+
+            yield "Waiting for container to stop"
+            await container.wait()
+            yield "Container stopped"
+        finally:
+            await stream.close()
+            await container.delete(force=True)
 
     async def is_running(self, path: str, /) -> bool:
         name = self._get_instance_name(path)

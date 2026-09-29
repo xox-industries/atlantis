@@ -19,6 +19,7 @@ class DisplayPalworldType:
         return [
             PalworldInstance(
                 name=name,
+                container_name=palworld.get_container_name(name),
                 running=await palworld.is_running(name),
                 port=await palworld.get_port(name),
             )

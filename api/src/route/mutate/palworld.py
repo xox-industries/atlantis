@@ -17,6 +17,7 @@ class MutationPalworldType:
         name = await info.context.app.palworld.touch()
         return PalworldInstance(
             name=name,
+            container_name=info.context.app.palworld.get_container_name(name),
             running=False,
             port=None,
         )
@@ -31,6 +32,7 @@ class MutationPalworldType:
         port = await info.context.app.docker.get_host_port(container)
         return PalworldInstance(
             name=instance,
+            container_name=info.context.app.palworld.get_container_name(instance),
             running=True,
             port=port,
         )
@@ -44,6 +46,7 @@ class MutationPalworldType:
         await info.context.app.palworld.stop(instance)
         return PalworldInstance(
             name=instance,
+            container_name=info.context.app.palworld.get_container_name(instance),
             running=False,
             port=None,
         )

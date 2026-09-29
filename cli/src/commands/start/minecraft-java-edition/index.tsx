@@ -47,10 +47,14 @@ export const startMinecraftJavaEditionAction = async () => {
       `on port ${updated?.port}`
     )}`
   )
+
+  return updated?.containerName
 }
 
 const startMinecraftJavaEditionCommand = new AtlantisCommand('minecraft-java-edition')
   .description('Start a Minecraft Java Edition instance')
-  .action(startMinecraftJavaEditionAction)
+  .action(async () => {
+    await startMinecraftJavaEditionAction()
+  })
 
 export default startMinecraftJavaEditionCommand

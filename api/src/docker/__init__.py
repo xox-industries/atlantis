@@ -81,22 +81,29 @@ class Docker:
         if exposed_ports:
             config["ExposedPorts"] = exposed_ports
 
-        return await self._docker.containers.run(config=config, name=f"atlantis-{name}")
+        return await self._docker.containers.run(config=config, name=self.get_container_name(name))
 
-    async def stop(self, name: str, /) -> None:
+    async def get_container(self, name: str, /) -> DockerContainer | None:
         try:
-            container = await self._docker.containers.get(f"atlantis-{name}")
+            return await self._docker.containers.get(self.get_container_name(name))
         except DockerError as exc:
             if exc.status == _HTTP_NOT_FOUND:
-                return
+                return None
             raise
+
+    async def stop(self, name: str, /) -> None:
+        container = await self.get_container(name)
+        if container is None:
+            return
 
         await container.stop()
         await container.delete(force=True)
 
     async def is_running(self, name: str, /) -> bool:
         try:
-            container = await self._docker.containers.get(f"atlantis-{name}")
+            container = await self.get_container(name)
+            if container is None:
+                return False
         except DockerError as exc:
             if exc.status == _HTTP_NOT_FOUND:
                 return False
@@ -105,11 +112,11 @@ class Docker:
         info = await container.show()
         return info.get("State", {}).get("Running", False) is True
 
-    async def get_host_port(self, container: str | DockerContainer, /, *, protocol: str = "udp") -> int | None:
+    async def get_host_port(self, name: str | DockerContainer, /, *, protocol: str = "udp") -> int | None:
         try:
-            container = (
-                await self._docker.containers.get(f"atlantis-{container}") if isinstance(container, str) else container
-            )
+            container = await self.get_container(name) if isinstance(name, str) else name
+            if container is None:
+                return None
         except DockerError as exc:
             if exc.status == _HTTP_NOT_FOUND:
                 return None
@@ -141,6 +148,9 @@ class Docker:
                 if isinstance(host_port, str):
                     return int(host_port)
         return None
+
+    def get_container_name(self, name: str, /) -> str:
+        return f"atlantis-{name}"
 
     @asynccontextmanager
     async def find_free_port(

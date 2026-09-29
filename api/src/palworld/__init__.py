@@ -74,6 +74,9 @@ class Palworld:
     def get_instance_name(self, instance: str) -> str:
         return f"{self.__class__.__name__}-{instance}".lower().strip()
 
+    def get_container_name(self, instance: str, /) -> str:
+        return self._app.docker.get_container_name(self.get_instance_name(instance))
+
     async def start(self, instance: str, /) -> DockerContainer:
         target = self.get_instance_dir(instance)
 

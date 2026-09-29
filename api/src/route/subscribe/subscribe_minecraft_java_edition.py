@@ -17,3 +17,11 @@ class SubscribeMinecraftJavaEditionType:
         info: Info[AppContext],
     ) -> AsyncGenerator[str]:
         return info.context.app.minecraft_java_edition.start(path)
+
+    @strawberry.subscription
+    async def stop_minecraft_java_edition(
+        self,
+        path: str,
+        info: Info[AppContext],
+    ) -> AsyncGenerator[str]:
+        return info.context.app.minecraft_java_edition.stop(path)

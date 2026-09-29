@@ -1,0 +1,14 @@
+query ATL_CommandsStopMinecraftJavaEdition_DisplayMinecraftJavaEditionInstances {
+  displayMinecraftJavaEditionInstances {
+    path
+    containerName
+    port
+    running
+  }
+}
+
+subscription ATL_CommandsStopMinecraftJavaEdition_StopMinecraftJavaEdition(
+  $path: String!
+) {
+  stopMinecraftJavaEdition(path: $path)
+}

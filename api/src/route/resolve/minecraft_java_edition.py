@@ -61,5 +61,6 @@ class MinecraftJavaEditionManifest:
 @strawberry.type
 class MinecraftJavaEditionInstance:
     path: str
-    running: bool
+    container_name: str
     port: int | None
+    running: bool
