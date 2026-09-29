@@ -91,7 +91,6 @@ class Palworld:
         image = os.environ["DOCKER_IMAGE"]
 
         name = self.get_instance_name(instance)
-        server_log = target.joinpath("server.log")
 
         command = [
             "bash",
@@ -112,8 +111,7 @@ class Palworld:
                 "xvfb-run -a wineboot -u && "
                 f"echo 'Starting PalServer on port {self.BASE_PORT}' && "
                 f"xvfb-run -a wine {self.CONTAINER_APP_DIR.joinpath('PalServer.exe')} "
-                f"-publiclobby -port={self.BASE_PORT} "
-                f"> {server_log} 2>&1"
+                f"-publiclobby -port={self.BASE_PORT}"
             ),
         ]
 
