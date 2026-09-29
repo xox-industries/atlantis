@@ -51,7 +51,7 @@ const promptModpackPath = async () => {
         const options: p.Option<string>[] = []
 
         if (input !== '' && allDirectories.has(input)) {
-          options.push({ value: input, label: SELF_DIRECTORY })
+          options.push({ value: input, label: `${input}/${SELF_DIRECTORY}` })
         }
 
         let parent = ''
@@ -96,7 +96,7 @@ const promptModpackPath = async () => {
           }
 
           seen.add(childPath)
-          options.push({ value: childPath, label: childName })
+          options.push({ value: childPath, label: childPath })
         }
 
         return options.sort((a, b) => (a.label ?? '').localeCompare(b.label ?? ''))
