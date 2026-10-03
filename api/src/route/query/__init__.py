@@ -5,6 +5,7 @@ from src.route.query.display_minecraft_java_edition import (
 )
 from src.route.query.display_palworld import DisplayPalworldType
 from src.route.query.display_steam import DisplaySteamType
+from src.route.query.display_terraria import DisplayTerrariaType
 
 QuerySchema = merge_types(
     name="QuerySchema",
@@ -12,5 +13,6 @@ QuerySchema = merge_types(
         DisplayMinecraftJavaEditionType,
         DisplayPalworldType,
         DisplaySteamType,
+        DisplayTerrariaType,
     ),
 )

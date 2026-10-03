@@ -2,6 +2,7 @@ import stopMinecraftJavaEditionCommand, {
   stopMinecraftJavaEditionAction,
 } from '@/src/commands/stop/minecraft-java-edition'
 import stopPalworldCommand, { stopPalworldAction } from '@/src/commands/stop/palworld'
+import stopTerrariaCommand, { stopTerrariaAction } from '@/src/commands/stop/terraria'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import * as p from '@clack/prompts'
@@ -13,6 +14,7 @@ const action = async () => {
       options: [
         { value: 'minecraft-java-edition', label: 'Minecraft (Java Edition)' },
         { value: 'palworld', label: 'Palworld' },
+        { value: 'terraria', label: 'Terraria' },
       ],
     })
   )
@@ -26,6 +28,10 @@ const action = async () => {
       await stopPalworldAction()
       break
 
+    case 'terraria':
+      await stopTerrariaAction()
+      break
+
     default:
       break
   }
@@ -36,5 +42,6 @@ const stopCommand = new AtlantisCommand('stop')
   .action(action)
   .addCommand(stopMinecraftJavaEditionCommand)
   .addCommand(stopPalworldCommand)
+  .addCommand(stopTerrariaCommand)
 
 export default stopCommand

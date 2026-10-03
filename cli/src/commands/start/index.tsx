@@ -2,9 +2,10 @@ import startMinecraftJavaEditionCommand, {
   startMinecraftJavaEditionAction,
 } from '@/src/commands/start/minecraft-java-edition'
 import startPalworldCommand, { startPalworldAction } from '@/src/commands/start/palworld'
+import startTerrariaCommand, { startTerrariaAction } from '@/src/commands/start/terraria'
 import { AtlantisCommand } from '@/src/lib/command'
-import { code } from '@/src/lib/strings'
 import { ensureNotCancelled } from '@/src/lib/prompts'
+import { code } from '@/src/lib/strings'
 import * as p from '@clack/prompts'
 import { Box, render, Text } from 'ink'
 
@@ -18,7 +19,8 @@ const action = async (options: StartOptions) => {
       message: 'Select a service to start',
       options: [
         { value: 'minecraft-java-edition', label: 'Minecraft (Java Edition)' },
-        { value: 'palworld', label: 'Palworld (Windows)' },
+        { value: 'palworld', label: 'Palworld' },
+        { value: 'terraria', label: 'Terraria' },
       ],
     })
   )
@@ -33,6 +35,10 @@ const action = async (options: StartOptions) => {
       containerName = await startPalworldAction(options)
       break
 
+    case 'terraria':
+      containerName = await startTerrariaAction(options)
+      break
+
     default:
       break
   }
@@ -40,12 +46,10 @@ const action = async (options: StartOptions) => {
   if (containerName) {
     const { unmount } = render(
       <Box display="flex" flexDirection="column" padding={1}>
+        <Text>Attach to the console with {code(`docker attach ${containerName}`)}.</Text>
         <Text>
-          Attach to the console with {code(`docker attach ${containerName}`)}.
-        </Text>
-        <Text>
-          Detach without stopping the server by pressing {code('Ctrl+P')},
-          then {code('Ctrl+Q')}.
+          Detach without stopping the server by pressing {code('Ctrl+P')}, then{' '}
+          {code('Ctrl+Q')}.
         </Text>
       </Box>
     )
@@ -59,5 +63,6 @@ const startCommand = new AtlantisCommand('start')
   .action(action)
   .addCommand(startPalworldCommand)
   .addCommand(startMinecraftJavaEditionCommand)
+  .addCommand(startTerrariaCommand)
 
 export default startCommand

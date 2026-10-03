@@ -1,0 +1,21 @@
+query ATL_CommandsStartTerraria_DisplayTerrariaInstances {
+  displayTerrariaInstances {
+    path
+    containerName
+    running
+    port
+  }
+}
+
+mutation ATL_CommandsStartTerraria_StartTerraria($path: String!) {
+  startTerraria(path: $path) {
+    path
+    containerName
+    running
+    port
+  }
+}
+
+subscription ATL_CommandsStartTerraria_TerrariaValidateApp($path: String!) {
+  terrariaValidateApp(path: $path)
+}

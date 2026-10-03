@@ -20,6 +20,7 @@ from src.palworld import Palworld
 from src.persistence import Persistence
 from src.route import create_context, create_schema
 from src.steam import Steam
+from src.terraria import Terraria
 
 ENV: Literal["development", "production"] = cast(
     "Literal['development', 'production']",
@@ -51,6 +52,7 @@ async def lifespan(app: App) -> AsyncGenerator[None]:
     app.docker = Docker(app)
     app.minecraft_java_edition = MinecraftJavaEdition(app)
     app.palworld = Palworld(app)
+    app.terraria = Terraria(app)
 
     await app.ensure_wineprefix()
 

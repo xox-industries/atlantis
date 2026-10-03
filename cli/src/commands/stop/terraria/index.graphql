@@ -1,0 +1,12 @@
+query ATL_CommandsStopTerraria_DisplayTerrariaInstances {
+  displayTerrariaInstances {
+    path
+    containerName
+    running
+    port
+  }
+}
+
+subscription ATL_CommandsStopTerraria_StopTerraria($path: String!) {
+  stopTerraria(path: $path)
+}

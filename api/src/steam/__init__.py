@@ -91,11 +91,12 @@ class Steam:
         app_id: str,
         anonymous: bool = False,
         platform: Literal["windows", "linux"] = "linux",
+        beta_branch: str | None = None,
     ) -> AsyncGenerator[str]:
         args = [
             f'+@sSteamCmdForcePlatformType "{"windows" if platform == "windows" else "linux"}"',
             f"+login {'anonymous' if (anonymous or not self.account) else self.account}",
-            f"+app_update {app_id}",
+            f"+app_update {app_id} f'{f' -beta {beta_branch}' if beta_branch else ''}'",
             "validate",
         ]
 

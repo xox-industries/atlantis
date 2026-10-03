@@ -3,6 +3,7 @@ from strawberry.tools import merge_types
 from .minecraft_java_edition import MutationMinecraftJavaEditionType
 from .palworld import MutationPalworldType
 from .steam import MutationSteamType
+from .terraria import MutationTerrariaType
 
 MutationSchema = merge_types(
     name="MutationSchema",
@@ -10,5 +11,6 @@ MutationSchema = merge_types(
         MutationMinecraftJavaEditionType,
         MutationPalworldType,
         MutationSteamType,
+        MutationTerrariaType,
     ),
 )

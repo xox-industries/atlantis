@@ -1,0 +1,33 @@
+mutation ATL_CommandsCreateTerraria_CreateTerraria(
+  $path: String!
+  $steamAppBetaBranch: String
+  $gameAutocreate: Int!
+  $gameDifficulty: Int
+  $gameMotd: String
+  $gamePassword: String
+  $gameSeed: String
+) {
+  createTerraria(
+    path: $path
+    steamAppBetaBranch: $steamAppBetaBranch
+    gameAutocreate: $gameAutocreate
+    gameDifficulty: $gameDifficulty
+    gameMotd: $gameMotd
+    gamePassword: $gamePassword
+    gameSeed: $gameSeed
+  ) {
+    path
+    steamAppBetaBranch
+    gameAutocreate
+    gameDifficulty
+    gameMotd
+    gamePassword
+    gameSeed
+    manifestType
+    manifestVersion
+  }
+}
+
+query ATL_CommandsCreateTerraria_DisplayTerrariaDirectories {
+  displayTerrariaDirectories
+}

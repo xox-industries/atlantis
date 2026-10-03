@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from src.palworld import Palworld
     from src.persistence import Persistence
     from src.steam import Steam
+    from src.terraria import Terraria
 
 
 class App(FastAPI):
@@ -39,6 +40,7 @@ class App(FastAPI):
 
     minecraft_java_edition: MinecraftJavaEdition
     palworld: Palworld
+    terraria: Terraria
 
     @classmethod
     def get_host_data_dir(cls) -> Path:

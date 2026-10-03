@@ -63,7 +63,7 @@ class MinecraftJavaEdition:
             raise ValueError(msg)
 
     async def display_directories(self) -> list[str]:
-        return await list_directories(self.DATA_DIR, max_depth=2)
+        return await list_directories(self.DATA_DIR, max_depth=3)
 
     async def latest_minecraft_version(self) -> str:
         return await get_latest_minecraft_version()
