@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from src.persistence import Persistence
     from src.steam import Steam
     from src.terraria import Terraria
+    from src.tmodloader import TModLoader
 
 
 class App(FastAPI):
@@ -41,6 +42,7 @@ class App(FastAPI):
     minecraft_java_edition: MinecraftJavaEdition
     palworld: Palworld
     terraria: Terraria
+    tmodloader: TModLoader
 
     @classmethod
     def get_host_data_dir(cls) -> Path:

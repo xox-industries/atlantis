@@ -170,7 +170,7 @@ class Docker:
         async with self._port_lock:
             containers = await self._docker.containers.list(
                 all=True,
-                filters={"label": [f"atlantis.game={game}"]},
+                # filters={"label": [f"atlantis.game={game}"]},
             )
 
             used_ports: set[int] = set()

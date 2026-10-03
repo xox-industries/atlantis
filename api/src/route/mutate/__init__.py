@@ -4,6 +4,7 @@ from .minecraft_java_edition import MutationMinecraftJavaEditionType
 from .palworld import MutationPalworldType
 from .steam import MutationSteamType
 from .terraria import MutationTerrariaType
+from .tmodloader import MutationTModLoaderType
 
 MutationSchema = merge_types(
     name="MutationSchema",
@@ -12,5 +13,6 @@ MutationSchema = merge_types(
         MutationPalworldType,
         MutationSteamType,
         MutationTerrariaType,
+        MutationTModLoaderType,
     ),
 )

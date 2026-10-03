@@ -3,6 +3,9 @@ import startMinecraftJavaEditionCommand, {
 } from '@/src/commands/start/minecraft-java-edition'
 import startPalworldCommand, { startPalworldAction } from '@/src/commands/start/palworld'
 import startTerrariaCommand, { startTerrariaAction } from '@/src/commands/start/terraria'
+import startTModLoaderCommand, {
+  startTModLoaderAction,
+} from '@/src/commands/start/tmodloader'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { code } from '@/src/lib/strings'
@@ -18,9 +21,13 @@ const action = async (options: StartOptions) => {
     await p.select({
       message: 'Select a service to start',
       options: [
-        { value: 'minecraft-java-edition', label: 'Minecraft (Java Edition)' },
+        {
+          value: 'minecraft-java-edition',
+          label: 'Minecraft (Java Edition) (Vanilla | Modded)',
+        },
         { value: 'palworld', label: 'Palworld' },
         { value: 'terraria', label: 'Terraria' },
+        { value: 'tmodloader', label: 'TModLoader (Modded Terraria)' },
       ],
     })
   )
@@ -37,6 +44,10 @@ const action = async (options: StartOptions) => {
 
     case 'terraria':
       containerName = await startTerrariaAction(options)
+      break
+
+    case 'tmodloader':
+      containerName = await startTModLoaderAction(options)
       break
 
     default:
@@ -64,5 +75,6 @@ const startCommand = new AtlantisCommand('start')
   .addCommand(startPalworldCommand)
   .addCommand(startMinecraftJavaEditionCommand)
   .addCommand(startTerrariaCommand)
+  .addCommand(startTModLoaderCommand)
 
 export default startCommand

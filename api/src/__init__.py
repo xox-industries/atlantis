@@ -21,6 +21,7 @@ from src.persistence import Persistence
 from src.route import create_context, create_schema
 from src.steam import Steam
 from src.terraria import Terraria
+from src.tmodloader import TModLoader
 
 ENV: Literal["development", "production"] = cast(
     "Literal['development', 'production']",
@@ -53,6 +54,7 @@ async def lifespan(app: App) -> AsyncGenerator[None]:
     app.minecraft_java_edition = MinecraftJavaEdition(app)
     app.palworld = Palworld(app)
     app.terraria = Terraria(app)
+    app.tmodloader = TModLoader(app)
 
     await app.ensure_wineprefix()
 

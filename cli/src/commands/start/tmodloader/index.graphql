@@ -1,0 +1,21 @@
+query ATL_CommandsStartTModLoader_DisplayTModLoaderInstances {
+  displayTmodloaderInstances {
+    path
+    containerName
+    running
+    port
+  }
+}
+
+mutation ATL_CommandsStartTModLoader_StartTModLoader($path: String!) {
+  startTmodloader(path: $path) {
+    path
+    containerName
+    running
+    port
+  }
+}
+
+subscription ATL_CommandsStartTModLoader_TModLoaderValidateApp($path: String!) {
+  tmodloaderValidateApp(path: $path)
+}

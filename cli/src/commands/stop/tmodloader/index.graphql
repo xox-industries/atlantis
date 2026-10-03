@@ -1,0 +1,12 @@
+query ATL_CommandsStopTModLoader_DisplayTModLoaderInstances {
+  displayTmodloaderInstances {
+    path
+    containerName
+    running
+    port
+  }
+}
+
+subscription ATL_CommandsStopTModLoader_StopTModLoader($path: String!) {
+  stopTmodloader(path: $path)
+}
