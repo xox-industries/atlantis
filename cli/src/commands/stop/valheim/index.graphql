@@ -1,0 +1,17 @@
+query ATL_CommandsStopValheim_DisplayValheim {
+  displayValheim {
+    name
+    containerName
+    running
+    port
+  }
+}
+
+mutation ATL_CommandsStopValheim_StopValheim($instance: String!) {
+  stopValheim(instance: $instance) {
+    name
+    containerName
+    running
+    port
+  }
+}

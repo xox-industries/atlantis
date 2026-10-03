@@ -8,6 +8,7 @@ import terrariaCommand, { terrariaCommandAction } from '@/src/commands/create/te
 import tmodloaderCommand, {
   tmodloaderCommandAction,
 } from '@/src/commands/create/tmodloader'
+import createValheimCommand, { createValheimAction } from '@/src/commands/create/valheim'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import * as p from '@clack/prompts'
@@ -24,6 +25,7 @@ const action = async () => {
         { value: 'palworld', label: 'Palworld' },
         { value: 'terraria', label: 'Terraria' },
         { value: 'tmodloader', label: 'TModLoader (Modded Terraria)' },
+        { value: 'valheim', label: 'Valheim' },
       ],
     })
   )
@@ -45,6 +47,10 @@ const action = async () => {
       await tmodloaderCommandAction()
       break
 
+    case 'valheim':
+      await createValheimAction()
+      break
+
     default:
       break
   }
@@ -57,5 +63,6 @@ const createCommand = new AtlantisCommand('create')
   .addCommand(createPalworldCommand)
   .addCommand(terrariaCommand)
   .addCommand(tmodloaderCommand)
+  .addCommand(createValheimCommand)
 
 export default createCommand

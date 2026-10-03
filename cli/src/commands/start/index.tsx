@@ -6,6 +6,7 @@ import startTerrariaCommand, { startTerrariaAction } from '@/src/commands/start/
 import startTModLoaderCommand, {
   startTModLoaderAction,
 } from '@/src/commands/start/tmodloader'
+import startValheimCommand, { startValheimAction } from '@/src/commands/start/valheim'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { code } from '@/src/lib/strings'
@@ -28,6 +29,7 @@ const action = async (options: StartOptions) => {
         { value: 'palworld', label: 'Palworld' },
         { value: 'terraria', label: 'Terraria' },
         { value: 'tmodloader', label: 'TModLoader (Modded Terraria)' },
+        { value: 'valheim', label: 'Valheim' },
       ],
     })
   )
@@ -48,6 +50,10 @@ const action = async (options: StartOptions) => {
 
     case 'tmodloader':
       containerName = await startTModLoaderAction(options)
+      break
+
+    case 'valheim':
+      containerName = await startValheimAction(options)
       break
 
     default:
@@ -76,5 +82,6 @@ const startCommand = new AtlantisCommand('start')
   .addCommand(startMinecraftJavaEditionCommand)
   .addCommand(startTerrariaCommand)
   .addCommand(startTModLoaderCommand)
+  .addCommand(startValheimCommand)
 
 export default startCommand

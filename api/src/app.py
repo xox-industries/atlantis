@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from src.steam import Steam
     from src.terraria import Terraria
     from src.tmodloader import TModLoader
+    from src.valheim import Valheim
 
 
 class App(FastAPI):
@@ -43,6 +44,7 @@ class App(FastAPI):
     palworld: Palworld
     terraria: Terraria
     tmodloader: TModLoader
+    valheim: Valheim
 
     @classmethod
     def get_host_data_dir(cls) -> Path:

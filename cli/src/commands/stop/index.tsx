@@ -6,6 +6,7 @@ import stopTerrariaCommand, { stopTerrariaAction } from '@/src/commands/stop/ter
 import stopTModLoaderCommand, {
   stopTModLoaderAction,
 } from '@/src/commands/stop/tmodloader'
+import stopValheimCommand, { stopValheimAction } from '@/src/commands/stop/valheim'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import * as p from '@clack/prompts'
@@ -22,6 +23,7 @@ const action = async () => {
         { value: 'palworld', label: 'Palworld' },
         { value: 'terraria', label: 'Terraria' },
         { value: 'tmodloader', label: 'TModLoader (Modded Terraria)' },
+        { value: 'valheim', label: 'Valheim' },
       ],
     })
   )
@@ -43,6 +45,10 @@ const action = async () => {
       await stopTModLoaderAction()
       break
 
+    case 'valheim':
+      await stopValheimAction()
+      break
+
     default:
       break
   }
@@ -55,5 +61,6 @@ const stopCommand = new AtlantisCommand('stop')
   .addCommand(stopPalworldCommand)
   .addCommand(stopTerrariaCommand)
   .addCommand(stopTModLoaderCommand)
+  .addCommand(stopValheimCommand)
 
 export default stopCommand

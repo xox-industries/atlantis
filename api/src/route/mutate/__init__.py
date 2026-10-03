@@ -5,6 +5,7 @@ from .palworld import MutationPalworldType
 from .steam import MutationSteamType
 from .terraria import MutationTerrariaType
 from .tmodloader import MutationTModLoaderType
+from .valheim import MutationValheimType
 
 MutationSchema = merge_types(
     name="MutationSchema",
@@ -14,5 +15,6 @@ MutationSchema = merge_types(
         MutationSteamType,
         MutationTerrariaType,
         MutationTModLoaderType,
+        MutationValheimType,
     ),
 )

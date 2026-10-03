@@ -5,6 +5,7 @@ from .subscribe_palworld import SubscribePalworldType
 from .subscribe_steam import SubscribeSteamType
 from .subscribe_terraria import SubscribeTerrariaType
 from .subscribe_tmodloader import SubscribeTModLoaderType
+from .subscribe_valheim import SubscribeValheimType
 
 SubscribeSchema = merge_types(
     name="SubscribeSchema",
@@ -14,5 +15,6 @@ SubscribeSchema = merge_types(
         SubscribeSteamType,
         SubscribeTerrariaType,
         SubscribeTModLoaderType,
+        SubscribeValheimType,
     ),
 )

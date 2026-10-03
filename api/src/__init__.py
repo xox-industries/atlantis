@@ -22,6 +22,7 @@ from src.route import create_context, create_schema
 from src.steam import Steam
 from src.terraria import Terraria
 from src.tmodloader import TModLoader
+from src.valheim import Valheim
 
 ENV: Literal["development", "production"] = cast(
     "Literal['development', 'production']",
@@ -55,6 +56,7 @@ async def lifespan(app: App) -> AsyncGenerator[None]:
     app.palworld = Palworld(app)
     app.terraria = Terraria(app)
     app.tmodloader = TModLoader(app)
+    app.valheim = Valheim(app)
 
     await app.ensure_wineprefix()
 

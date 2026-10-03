@@ -77,7 +77,7 @@ class MutationTerrariaType:
         info: Info[AppContext],
     ) -> TerrariaInstance:
         container = await info.context.app.terraria.start(path)
-        port = await info.context.app.docker.get_host_port(container)
+        port = await info.context.app.docker.get_host_port(container, protocol="tcp")
         return TerrariaInstance(
             path=path,
             container_name=info.context.app.terraria.get_container_name(path),
