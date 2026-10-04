@@ -29,9 +29,10 @@ class TModLoader(TerrariaLikeGameServer[PersistedTModLoaderManifest]):
             "bash",
             "-c",
             (
-                f"rm -rf {self.CONTAINER_APP_DIR} && "
+                f"[ -d {self.CONTAINER_APP_DIR} ] || ( "
                 "echo 'Copying tModLoader app into container' && "
-                f"cp -a --reflink=auto {self.APP_DIR} {self.CONTAINER_APP_DIR} && "
+                f"cp -a --reflink=auto {self.APP_DIR} {self.CONTAINER_APP_DIR} "
+                ") && "
                 f"chmod +x {self.CONTAINER_APP_DIR.joinpath('start-tModLoaderServer.sh')} && "
                 f"mkdir -p {self.CONTAINER_SAVED_DIR} && "
                 "echo 'Starting tModLoader server' && "
