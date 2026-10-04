@@ -15,13 +15,13 @@ class DisplayPalworldType:
         info: Info["AppContext"],
     ) -> list[PalworldInstance]:
         palworld = info.context.app.palworld
-        names = await palworld.ls()
+        names = await palworld.list_instances()
         return [
             PalworldInstance(
                 name=name,
                 container_name=palworld.get_container_name(name),
                 running=await palworld.is_running(name),
-                port=await palworld.get_port(name),
+                port=await palworld.get_host_port(name),
             )
             for name in names
         ]

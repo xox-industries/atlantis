@@ -2,41 +2,23 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
 from pathlib import Path
 
 from aiodocker.containers import DockerContainer
 
 from src.app import App
+from src.game.base import GameServer
+from src.game.error import InstanceAlreadyRunningError
 from src.steam import Steam
 
 
-class InstanceNotFoundError(ValueError):
-    """Raised when the requested instance does not exist."""
-
-    def __init__(self, instance: str) -> None:
-        super().__init__(f"Instance {instance!r} does not exist")
-
-
-class InstanceAlreadyRunningError(RuntimeError):
-    """Raised when the requested instance is already running."""
-
-    def __init__(self, instance: str) -> None:
-        super().__init__(f"Instance {instance!r} is already running")
-
-
-class InstanceNotRunningError(RuntimeError):
-    """Raised when the requested instance is not running."""
-
-    def __init__(self, instance: str) -> None:
-        super().__init__(f"Instance {instance!r} is not running")
-
-
-class Valheim:
+class Valheim(GameServer):
     DATA_DIR = App.DATA_DIR.joinpath("valheim")
 
     APP_ID = "896660"
     BASE_PORT = 2456
+    GAME_KEY = "valheim"
+    PROTOCOL = "udp"
 
     APP_NAME = "Valheim dedicated server"
     APP_DIR = Steam.APP_DIR.joinpath(APP_NAME)
@@ -45,8 +27,7 @@ class Valheim:
     CONTAINER_WORLDS_DIR = CONTAINER_CONFIG_DIR.joinpath("worlds_local")
 
     def __init__(self, app: App, /) -> None:
-        self._app = app
-        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        super().__init__(app)
 
     async def validate_app(self) -> AsyncGenerator[str]:
         steam = self._app.steam
@@ -55,27 +36,6 @@ class Valheim:
             anonymous=True,
             platform="linux",
         )
-
-    async def ls(self) -> list[str]:
-        return [path.name for path in self.DATA_DIR.iterdir() if path.is_dir()]
-
-    async def touch(self) -> str:
-        name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
-        self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
-        return name
-
-    def get_instance_dir(self, name: str) -> Path:
-        instance = self.DATA_DIR.joinpath(name)
-        if not instance.is_dir():
-            raise InstanceNotFoundError(name)
-
-        return instance
-
-    def get_instance_name(self, instance: str) -> str:
-        return f"valheim-{instance}".lower().strip()
-
-    def get_container_name(self, instance: str, /) -> str:
-        return self._app.docker.get_container_name(self.get_instance_name(instance))
 
     async def start(self, instance: str, /) -> DockerContainer:
         target = self.get_instance_dir(instance)
@@ -120,16 +80,16 @@ class Valheim:
             str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR),
         }
         labels = {
-            "atlantis.game": "valheim",
+            "atlantis.game": self.GAME_KEY,
             "atlantis.instance": instance,
         }
 
         async with self._app.docker.find_free_port(
             base=self.BASE_PORT,
-            game="valheim",
-            protocol="udp",
+            game=self.GAME_KEY,
+            protocol=self.PROTOCOL,
         ) as port:
-            ports = {f"{self.BASE_PORT}/udp": ("0.0.0.0", port)}  # noqa: S104
+            ports = {f"{self.BASE_PORT}/{self.PROTOCOL}": ("0.0.0.0", port)}
             return await self._app.docker.run(
                 name=name,
                 image=image,
@@ -143,13 +103,3 @@ class Valheim:
     async def stop(self, instance: str, /) -> None:
         name = self.get_instance_name(instance)
         await self._app.docker.stop(name)
-
-    async def is_running(self, instance: str, /) -> bool:
-        return await self._app.docker.is_running(self.get_instance_name(instance))
-
-    async def get_port(self, instance: str, /) -> int | None:
-        name = self.get_instance_name(instance)
-        if not await self._app.docker.is_running(name):
-            return None
-
-        return await self._app.docker.get_host_port(name, protocol="udp")

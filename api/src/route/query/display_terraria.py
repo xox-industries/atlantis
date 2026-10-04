@@ -27,7 +27,7 @@ class DisplayTerrariaType:
             TerrariaInstance(
                 path=manifest.path,
                 container_name=info.context.app.terraria.get_container_name(manifest.path),
-                port=await info.context.app.terraria.get_port(manifest.path),
+                port=await info.context.app.terraria.get_host_port(manifest.path),
                 running=await info.context.app.terraria.is_running(manifest.path),
             )
             for manifest in manifests

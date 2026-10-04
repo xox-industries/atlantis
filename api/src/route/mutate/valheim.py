@@ -14,7 +14,7 @@ class MutationValheimType:
         self,
         info: Info["AppContext"],
     ) -> ValheimInstance:
-        name = await info.context.app.valheim.touch()
+        name = await info.context.app.valheim.create_instance()
         return ValheimInstance(
             name=name,
             container_name=info.context.app.valheim.get_container_name(name),

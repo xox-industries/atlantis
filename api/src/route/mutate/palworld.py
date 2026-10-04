@@ -14,7 +14,7 @@ class MutationPalworldType:
         self,
         info: Info["AppContext"],
     ) -> PalworldInstance:
-        name = await info.context.app.palworld.touch()
+        name = await info.context.app.palworld.create_instance()
         return PalworldInstance(
             name=name,
             container_name=info.context.app.palworld.get_container_name(name),

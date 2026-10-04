@@ -5,15 +5,13 @@ import enum
 import json
 import os
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, Unpack
 
 from src.app import App
-from src.minecraft_java_edition.error import (
+from src.game.base import ManifestGameServer
+from src.game.error import (
     InstanceAlreadyRunningError,
-    InstanceNotFoundError,
-    InvalidManifestPathError,
     ManifestAlreadyExistsError,
     ManifestNotFoundError,
 )
@@ -34,28 +32,16 @@ class ModLoaderType(enum.StrEnum):
     NEOFORGE = "neoforge"
 
 
-class MinecraftJavaEdition:
+class MinecraftJavaEdition(ManifestGameServer):
     DATA_DIR = App.DATA_DIR.joinpath("minecraft-java-edition")
 
     MANIFEST_FILE_NAME = "manifest.json"
     BASE_PORT = 25565
+    GAME_KEY = "minecraft-java-edition"
+    PROTOCOL = "tcp"
 
     def __init__(self, app: App, /) -> None:
-        self._app = app
-        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-    def _resolve_path(self, path: str, /) -> Path:
-        if not path:
-            return self.DATA_DIR
-
-        if path.startswith("/"):
-            raise InvalidManifestPathError(path)
-
-        resolved = self.DATA_DIR.joinpath(path).resolve()
-        if not str(resolved).startswith(str(self.DATA_DIR.resolve())):
-            raise InvalidManifestPathError(path)
-
-        return resolved
+        super().__init__(app)
 
     def _validate_modloader_type(self, modloader_type: str, /) -> None:
         if modloader_type not in {member.value for member in ModLoaderType}:
@@ -90,11 +76,6 @@ class MinecraftJavaEdition:
 
         return await asyncio.to_thread(_walk)
 
-    async def touch(self) -> str:
-        name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
-        self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
-        return name
-
     class CreateManifestArgs(TypedDict, total=False):
         minecraft_version: str
         modloader_type: str
@@ -105,7 +86,7 @@ class MinecraftJavaEdition:
         self,
         **kwargs: Unpack[CreateManifestArgs],
     ) -> PersistedMinecraftJavaEditionManifest:
-        path = await self.touch()
+        path = await self.create_instance()
         minecraft_version = kwargs["minecraft_version"]
         modloader_type = kwargs["modloader_type"]
         modloader_version = kwargs["modloader_version"]
@@ -210,23 +191,14 @@ class MinecraftJavaEdition:
 
         return LazyAwaitable(_query())
 
-    def _get_instance_name(self, path: str, /) -> str:
-        return f"minecraft-java-edition-{path or 'default'}".lower().strip("/").replace("/", "-")
-
-    def _get_instance_dir(self, path: str, /) -> Path:
-        target_dir = self._resolve_path(path)
-        if not target_dir.joinpath(self.MANIFEST_FILE_NAME).exists():
-            raise InstanceNotFoundError(path)
-        return target_dir
-
     async def start(self, path: str, /) -> AsyncGenerator[str]:
-        target_dir = self._get_instance_dir(path)
-        name = self._get_instance_name(path)
+        target_dir = self.get_instance_dir(path)
+        name = self.get_instance_name(path)
 
         if await self.is_running(path):
             raise InstanceAlreadyRunningError(path)
 
-        await self._app.docker.stop(self._get_instance_name(path))
+        await self._app.docker.stop(self.get_instance_name(path))
 
         manifest = await asyncio.to_thread(
             self._read_sync,
@@ -244,16 +216,16 @@ class MinecraftJavaEdition:
             str(self._app.get_host_path(target_dir)): str(target_dir),
         }
         labels = {
-            "atlantis.game": "minecraft-java-edition",
+            "atlantis.game": self.GAME_KEY,
             "atlantis.instance": path,
         }
 
         async with self._app.docker.find_free_port(
             base=self.BASE_PORT,
-            game="minecraft-java-edition",
-            protocol="tcp",
+            game=self.GAME_KEY,
+            protocol=self.PROTOCOL,
         ) as external_port:
-            ports = {f"{self.BASE_PORT}/tcp": ("0.0.0.0", external_port)}  # noqa: S104
+            ports = {f"{self.BASE_PORT}/{self.PROTOCOL}": ("0.0.0.0", external_port)}
             await self._app.docker.run(
                 name=name,
                 image=image,
@@ -265,11 +237,8 @@ class MinecraftJavaEdition:
             )
             yield f"Started on port {external_port}"
 
-    def get_container_name(self, path: str, /) -> str:
-        return self._app.docker.get_container_name(self._get_instance_name(path))
-
     async def stop(self, path: str, /) -> AsyncGenerator[str]:
-        container = await self._app.docker.get_container(self._get_instance_name(path))
+        container = await self._app.docker.get_container(self.get_instance_name(path))
         if container is None:
             yield "Container not found"
             return
@@ -300,21 +269,6 @@ class MinecraftJavaEdition:
         finally:
             await stream.close()
             await container.delete(force=True)
-
-    async def is_running(self, path: str, /) -> bool:
-        name = self._get_instance_name(path)
-        return await self._app.docker.is_running(name)
-
-    async def get_port(self, path: str, /) -> int | None:
-        name = self._get_instance_name(path)
-        if not await self._app.docker.is_running(name):
-            return None
-
-        return await self._app.docker.get_host_port(name, protocol="tcp")
-
-    def _relative_path(self, absolute_path: Path, /) -> str:
-        relative = absolute_path.relative_to(self.DATA_DIR.resolve())
-        return str(relative) if str(relative) != "." else ""
 
     def _read_sync(
         self,

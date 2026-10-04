@@ -29,7 +29,7 @@ class DisplayTModLoaderType:
                 container_name=info.context.app.tmodloader.get_container_name(
                     manifest.path,
                 ),
-                port=await info.context.app.tmodloader.get_port(manifest.path),
+                port=await info.context.app.tmodloader.get_host_port(manifest.path),
                 running=await info.context.app.tmodloader.is_running(manifest.path),
             )
             for manifest in manifests

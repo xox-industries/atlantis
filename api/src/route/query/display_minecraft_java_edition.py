@@ -32,7 +32,7 @@ class DisplayMinecraftJavaEditionType:
                 container_name=info.context.app.minecraft_java_edition.get_container_name(
                     manifest.path,
                 ),
-                port=await info.context.app.minecraft_java_edition.get_port(manifest.path),
+                port=await info.context.app.minecraft_java_edition.get_host_port(manifest.path),
                 running=await info.context.app.minecraft_java_edition.is_running(manifest.path),
             )
             for manifest in manifests

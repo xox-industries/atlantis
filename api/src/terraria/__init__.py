@@ -4,32 +4,32 @@ import asyncio
 import json
 import os
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, Unpack
 
 from aiodocker.containers import DockerContainer
 
 from src.app import App
-from src.steam import Steam
-from src.terraria.error import (
+from src.game.base import ManifestGameServer
+from src.game.error import (
     InstanceAlreadyRunningError,
-    InstanceNotFoundError,
-    InvalidManifestPathError,
     ManifestAlreadyExistsError,
     ManifestNotFoundError,
 )
+from src.steam import Steam
 from src.terraria.model import PersistedTerrariaManifest
 
 
-class Terraria:
+class Terraria(ManifestGameServer):
     DATA_DIR = App.DATA_DIR.joinpath("terraria")
 
     MANIFEST_FILE_NAME = "manifest.json"
     CONFIG_FILE_NAME = "manifest.conf"
     APP_ID = "105600"
     BASE_PORT = 7777
+    GAME_KEY = "terraria"
     MAX_PLAYERS = 16
+    PROTOCOL = "tcp"
 
     APP_DIR = Steam.APP_DIR.joinpath("Terraria")
     CONTAINER_APP_DIR = Path("/home/app/Terraria")
@@ -39,28 +39,10 @@ class Terraria:
     CONTAINER_WORLD_PATH = CONTAINER_SAVED_DIR.joinpath("world.wld")
 
     def __init__(self, app: App, /) -> None:
-        self._app = app
-        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-    def _resolve_path(self, path: str, /) -> Path:
-        if not path:
-            return self.DATA_DIR
-
-        if path.startswith("/"):
-            raise InvalidManifestPathError(path)
-
-        resolved = self.DATA_DIR.joinpath(path).resolve()
-        if not str(resolved).startswith(str(self.DATA_DIR.resolve())):
-            raise InvalidManifestPathError(path)
-
-        return resolved
-
-    def _relative_path(self, absolute_path: Path, /) -> str:
-        relative = absolute_path.relative_to(self.DATA_DIR.resolve())
-        return str(relative) if str(relative) != "." else ""
+        super().__init__(app)
 
     async def validate_app(self, path: str, /) -> AsyncGenerator[str]:
-        target_dir = self._get_instance_dir(path)
+        target_dir = self.get_instance_dir(path)
         manifest = await asyncio.to_thread(
             self._read_sync,
             target_dir.joinpath(self.MANIFEST_FILE_NAME),
@@ -84,11 +66,6 @@ class Terraria:
 
         return await asyncio.to_thread(_walk)
 
-    async def touch(self) -> str:
-        name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
-        self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
-        return name
-
     class CreateManifestArgs(TypedDict, total=False):
         steam_app_beta_branch: str | None
         game_autocreate: int
@@ -101,7 +78,7 @@ class Terraria:
         self,
         **kwargs: Unpack[CreateManifestArgs],
     ) -> PersistedTerrariaManifest:
-        path = await self.touch()
+        path = await self.create_instance()
         target_dir = self._resolve_path(path)
         manifest_path = target_dir.joinpath(self.MANIFEST_FILE_NAME)
 
@@ -184,36 +161,14 @@ class Terraria:
             self._relative_path(target_dir),
         )
 
-    def _get_instance_name(self, path: str, /) -> str:
-        return f"terraria-{path or 'default'}".lower().strip("/").replace("/", "-")
-
-    def _get_instance_dir(self, path: str, /) -> Path:
-        target_dir = self._resolve_path(path)
-        if not target_dir.joinpath(self.MANIFEST_FILE_NAME).exists():
-            raise InstanceNotFoundError(path)
-        return target_dir
-
-    def get_container_name(self, path: str, /) -> str:
-        return self._app.docker.get_container_name(self._get_instance_name(path))
-
-    async def is_running(self, path: str, /) -> bool:
-        return await self._app.docker.is_running(self._get_instance_name(path))
-
-    async def get_port(self, path: str, /) -> int | None:
-        name = self._get_instance_name(path)
-        if not await self._app.docker.is_running(name):
-            return None
-
-        return await self._app.docker.get_host_port(name, protocol="tcp")
-
     async def start(self, path: str, /) -> DockerContainer:
-        target_dir = self._get_instance_dir(path)
-        name = self._get_instance_name(path)
+        target_dir = self.get_instance_dir(path)
+        name = self.get_instance_name(path)
 
         if await self.is_running(path):
             raise InstanceAlreadyRunningError(path)
 
-        await self._app.docker.stop(self._get_instance_name(path))
+        await self._app.docker.stop(self.get_instance_name(path))
 
         manifest = await asyncio.to_thread(
             self._read_sync,
@@ -246,16 +201,16 @@ class Terraria:
             str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR),
         }
         labels = {
-            "atlantis.game": "terraria",
+            "atlantis.game": self.GAME_KEY,
             "atlantis.instance": path,
         }
 
         async with self._app.docker.find_free_port(
             base=self.BASE_PORT,
-            game="terraria",
-            protocol="tcp",
+            game=self.GAME_KEY,
+            protocol=self.PROTOCOL,
         ) as port:
-            ports = {f"{self.BASE_PORT}/tcp": ("0.0.0.0", port)}  # noqa: S104
+            ports = {f"{self.BASE_PORT}/{self.PROTOCOL}": ("0.0.0.0", port)}
             return await self._app.docker.run(
                 name=name,
                 image=image,
@@ -267,7 +222,7 @@ class Terraria:
             )
 
     async def stop(self, path: str, /) -> AsyncGenerator[str]:
-        container = await self._app.docker.get_container(self._get_instance_name(path))
+        container = await self._app.docker.get_container(self.get_instance_name(path))
         if container is None:
             yield "Container not found"
             return
