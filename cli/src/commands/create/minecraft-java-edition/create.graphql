@@ -1,12 +1,10 @@
 mutation ATL_CommandsCreateMinecraftJavaEdition_CreateMinecraftJavaEdition(
-  $path: String!
   $minecraftVersion: String!
   $modloaderType: String!
   $modloaderVersion: String!
   $ram: Int!
 ) {
   createMinecraftJavaEdition(
-    path: $path
     minecraftVersion: $minecraftVersion
     modloaderType: $modloaderType
     modloaderVersion: $modloaderVersion
@@ -22,10 +20,6 @@ mutation ATL_CommandsCreateMinecraftJavaEdition_CreateMinecraftJavaEdition(
     manifestType
     manifestVersion
   }
-}
-
-query ATL_CommandsCreateMinecraftJavaEdition_DisplayMinecraftJavaEditionDirectories {
-  displayMinecraftJavaEditionDirectories
 }
 
 query ATL_CommandsCreateMinecraftJavaEdition_LatestMinecraftJavaEditionMinecraftVersion {

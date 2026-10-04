@@ -1,5 +1,4 @@
 mutation ATL_CommandsCreateTerraria_CreateTerraria(
-  $path: String!
   $steamAppBetaBranch: String
   $gameAutocreate: Int!
   $gameDifficulty: Int
@@ -8,7 +7,6 @@ mutation ATL_CommandsCreateTerraria_CreateTerraria(
   $gameSeed: String
 ) {
   createTerraria(
-    path: $path
     steamAppBetaBranch: $steamAppBetaBranch
     gameAutocreate: $gameAutocreate
     gameDifficulty: $gameDifficulty
@@ -26,8 +24,4 @@ mutation ATL_CommandsCreateTerraria_CreateTerraria(
     manifestType
     manifestVersion
   }
-}
-
-query ATL_CommandsCreateTerraria_DisplayTerrariaDirectories {
-  displayTerrariaDirectories
 }

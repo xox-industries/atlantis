@@ -17,7 +17,6 @@ class MutationMinecraftJavaEditionType:
     async def create_minecraft_java_edition(
         self,
         info: Info[AppContext],
-        path: str,
         *,
         minecraft_version: str,
         modloader_type: str,
@@ -25,7 +24,6 @@ class MutationMinecraftJavaEditionType:
         ram: int,
     ) -> MinecraftJavaEditionManifest:
         manifest = await info.context.app.minecraft_java_edition.create_manifest(
-            path=path,
             minecraft_version=minecraft_version,
             modloader_type=modloader_type,
             modloader_version=modloader_version,

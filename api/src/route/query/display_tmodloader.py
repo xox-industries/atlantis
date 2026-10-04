@@ -34,10 +34,3 @@ class DisplayTModLoaderType:
             )
             for manifest in manifests
         ]
-
-    @strawberry.field
-    async def display_tmodloader_directories(
-        self,
-        info: Info[AppContext],
-    ) -> list[str]:
-        return await info.context.app.tmodloader.display_directories()

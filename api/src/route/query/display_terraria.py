@@ -32,10 +32,3 @@ class DisplayTerrariaType:
             )
             for manifest in manifests
         ]
-
-    @strawberry.field
-    async def display_terraria_directories(
-        self,
-        info: Info[AppContext],
-    ) -> list[str]:
-        return await info.context.app.terraria.display_directories()

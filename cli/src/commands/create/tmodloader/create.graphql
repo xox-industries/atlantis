@@ -1,5 +1,4 @@
 mutation ATL_CommandsCreateTModLoader_CreateTModLoader(
-  $path: String!
   $steamAppBetaBranch: String
   $gameAutocreate: Int!
   $gameDifficulty: Int
@@ -8,7 +7,6 @@ mutation ATL_CommandsCreateTModLoader_CreateTModLoader(
   $gameSeed: String
 ) {
   createTmodloader(
-    path: $path
     steamAppBetaBranch: $steamAppBetaBranch
     gameAutocreate: $gameAutocreate
     gameDifficulty: $gameDifficulty
@@ -26,8 +24,4 @@ mutation ATL_CommandsCreateTModLoader_CreateTModLoader(
     manifestType
     manifestVersion
   }
-}
-
-query ATL_CommandsCreateTModLoader_DisplayTModLoaderDirectories {
-  displayTmodloaderDirectories
 }

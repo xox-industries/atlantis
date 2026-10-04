@@ -39,13 +39,6 @@ class DisplayMinecraftJavaEditionType:
         ]
 
     @strawberry.field
-    async def display_minecraft_java_edition_directories(
-        self,
-        info: Info[AppContext],
-    ) -> list[str]:
-        return await info.context.app.minecraft_java_edition.display_directories()
-
-    @strawberry.field
     async def latest_minecraft_java_edition_minecraft_version(
         self,
         info: Info[AppContext],

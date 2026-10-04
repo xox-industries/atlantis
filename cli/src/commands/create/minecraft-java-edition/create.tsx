@@ -2,12 +2,9 @@ import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { isPositiveInteger } from '@/src/lib/strings'
 import { graphQLClient } from '@/src/stores/graphql'
-import type { AutocompletePrompt } from '@clack/core'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
 import { MinecraftModloaderType, MODLOADER_OPTIONS } from './shared'
-
-const SELF_DIRECTORY = '.'
 
 const validateMinecraftVersion = async (version: string): Promise<boolean> => {
   const { validateMinecraftJavaEditionVersion: valid } =
@@ -36,82 +33,7 @@ const validateModloaderVersion = async (
   return valid
 }
 
-const promptModpackPath = async () => {
-  const { displayMinecraftJavaEditionDirectories: directories } =
-    await graphQLClient.ATL_CommandsCreateMinecraftJavaEdition_DisplayMinecraftJavaEditionDirectories()
-
-  const allDirectories = new Set(directories)
-
-  const choice = ensureNotCancelled(
-    await p.autocomplete({
-      message: `Navigate to modpack directory ${chalk.gray('(type a path, Tab to complete, Enter to confirm)')}`,
-      options: function (this: AutocompletePrompt<p.Option<string>>): p.Option<string>[] {
-        const input = (this.userInput ?? '').replace(/\/+$/, '')
-
-        const options: p.Option<string>[] = []
-
-        if (input !== '' && allDirectories.has(input)) {
-          options.push({ value: input, label: `${input}/${SELF_DIRECTORY}` })
-        }
-
-        let parent = ''
-        let filterSuffix = input.toLowerCase()
-
-        for (const dir of allDirectories) {
-          if (dir === '') {
-            continue
-          }
-          if (input === dir) {
-            parent = dir
-            filterSuffix = ''
-            break
-          }
-          if (input.startsWith(`${dir}/`)) {
-            parent = dir
-            filterSuffix = input.slice(dir.length + 1).toLowerCase()
-          }
-        }
-
-        const prefix = parent === '' ? '' : `${parent}/`
-        const seen = new Set<string>()
-
-        for (const dir of allDirectories) {
-          if (!dir.startsWith(prefix) || dir === parent) {
-            continue
-          }
-
-          const remainder = dir.slice(prefix.length)
-          const childName = remainder.split('/')[0]
-          if (childName === '') {
-            continue
-          }
-
-          if (filterSuffix !== '' && !childName.toLowerCase().startsWith(filterSuffix)) {
-            continue
-          }
-
-          const childPath = `${prefix}${childName}`
-          if (seen.has(childPath)) {
-            continue
-          }
-
-          seen.add(childPath)
-          options.push({ value: childPath, label: childPath })
-        }
-
-        return options.sort((a, b) => (a.label ?? '').localeCompare(b.label ?? ''))
-      },
-      filter: () => true,
-      completeOnTab: true,
-    })
-  )
-
-  return choice
-}
-
 export const createMinecraftJavaEditionAction = async () => {
-  const path = await promptModpackPath()
-
   const { latestMinecraftJavaEditionMinecraftVersion: latestMinecraftVersion } =
     await graphQLClient.ATL_CommandsCreateMinecraftJavaEdition_LatestMinecraftJavaEditionMinecraftVersion()
 
@@ -192,7 +114,6 @@ export const createMinecraftJavaEditionAction = async () => {
     const { createMinecraftJavaEdition: created } =
       await graphQLClient.ATL_CommandsCreateMinecraftJavaEdition_CreateMinecraftJavaEdition(
         {
-          path,
           minecraftVersion: minecraftVersion.trim(),
           modloaderType: modloaderType,
           modloaderVersion: modloaderVersion.trim(),
@@ -202,9 +123,7 @@ export const createMinecraftJavaEditionAction = async () => {
 
     creating.stop(
       `Created manifest at ${chalk.magentaBright(
-        created.path === ''
-          ? 'minecraft-java-edition/manifest.json'
-          : `${created.path}/manifest.json`
+        `minecraft-java-edition/${created.path}/manifest.json`
       )}`
     )
   } catch (e) {

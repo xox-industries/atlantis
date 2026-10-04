@@ -4,13 +4,13 @@ import asyncio
 import json
 import os
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, Unpack
 
 from aiodocker.containers import DockerContainer
 
 from src.app import App
-from src.lib.path_utils import list_directories
 from src.steam import Steam
 from src.tmodloader.error import (
     InstanceAlreadyRunningError,
@@ -74,9 +74,6 @@ class TModLoader:
             beta_branch=manifest.steam_app_beta_branch,
         )
 
-    async def display_directories(self) -> list[str]:
-        return await list_directories(self.DATA_DIR, max_depth=3)
-
     async def display_manifests(self) -> list[PersistedTModLoaderManifest]:
         def _walk() -> list[PersistedTModLoaderManifest]:
             manifests: list[PersistedTModLoaderManifest] = []
@@ -87,8 +84,12 @@ class TModLoader:
 
         return await asyncio.to_thread(_walk)
 
+    async def touch(self) -> str:
+        name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
+        self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
+        return name
+
     class CreateManifestArgs(TypedDict, total=False):
-        path: str
         steam_app_beta_branch: str | None
         game_autocreate: int
         game_difficulty: int | None
@@ -100,7 +101,7 @@ class TModLoader:
         self,
         **kwargs: Unpack[CreateManifestArgs],
     ) -> PersistedTModLoaderManifest:
-        path = kwargs["path"]
+        path = await self.touch()
         target_dir = self._resolve_path(path)
         manifest_path = target_dir.joinpath(self.MANIFEST_FILE_NAME)
 

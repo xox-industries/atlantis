@@ -5,11 +5,11 @@ import enum
 import json
 import os
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict, Unpack
 
 from src.app import App
-from src.lib.path_utils import list_directories
 from src.minecraft_java_edition.error import (
     InstanceAlreadyRunningError,
     InstanceNotFoundError,
@@ -62,9 +62,6 @@ class MinecraftJavaEdition:
             msg = f"Modloader type must be one of: {', '.join(sorted(ModLoaderType))}"
             raise ValueError(msg)
 
-    async def display_directories(self) -> list[str]:
-        return await list_directories(self.DATA_DIR, max_depth=3)
-
     async def latest_minecraft_version(self) -> str:
         return await get_latest_minecraft_version()
 
@@ -93,8 +90,12 @@ class MinecraftJavaEdition:
 
         return await asyncio.to_thread(_walk)
 
+    async def touch(self) -> str:
+        name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
+        self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
+        return name
+
     class CreateManifestArgs(TypedDict, total=False):
-        path: str
         minecraft_version: str
         modloader_type: str
         modloader_version: str
@@ -104,7 +105,7 @@ class MinecraftJavaEdition:
         self,
         **kwargs: Unpack[CreateManifestArgs],
     ) -> PersistedMinecraftJavaEditionManifest:
-        path = kwargs["path"]
+        path = await self.touch()
         minecraft_version = kwargs["minecraft_version"]
         modloader_type = kwargs["modloader_type"]
         modloader_version = kwargs["modloader_version"]

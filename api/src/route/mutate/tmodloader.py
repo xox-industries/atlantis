@@ -17,7 +17,6 @@ class MutationTModLoaderType:
     async def create_tmodloader(
         self,
         info: Info[AppContext],
-        path: str,
         *,
         steam_app_beta_branch: str | None = None,
         game_autocreate: int,
@@ -27,7 +26,6 @@ class MutationTModLoaderType:
         game_seed: str | None = None,
     ) -> TModLoaderManifest:
         manifest = await info.context.app.tmodloader.create_manifest(
-            path=path,
             steam_app_beta_branch=steam_app_beta_branch,
             game_autocreate=game_autocreate,
             game_difficulty=game_difficulty,
