@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
-from src.game.error import InstanceNotFoundError, InvalidManifestPathError
+from src.game.error import InstanceNotFoundError
 
 if TYPE_CHECKING:
     from src.app import App
@@ -143,76 +143,3 @@ class GameServer(ABC):
             return None
 
         return await self._app.docker.get_host_port(name, protocol=self.PROTOCOL)
-
-
-class ManifestGameServer(GameServer, ABC):
-    """Base class for game servers that persist per-instance manifests.
-
-    In addition to the helpers provided by :class:`GameServer`, this class
-    adds safe path resolution and relative-path conversion for manifest files
-    stored inside each instance directory.
-    """
-
-    MANIFEST_FILE_NAME: ClassVar[str] = "manifest.json"
-    """Filename used for the per-instance manifest."""
-
-    def _resolve_path(self, path: str, /) -> Path:
-        """Resolve a relative instance path to an absolute path under ``DATA_DIR``.
-
-        Empty paths resolve to :attr:`DATA_DIR` itself. Absolute paths and
-        paths that escape ``DATA_DIR`` are rejected.
-
-        Args:
-            path: Relative instance path, possibly empty.
-
-        Returns:
-            Absolute, resolved path within ``DATA_DIR``.
-
-        Raises:
-            InvalidManifestPathError: If the path is absolute or escapes
-                ``DATA_DIR``.
-
-        """
-        if not path:
-            return self.DATA_DIR
-
-        if path.startswith("/"):
-            raise InvalidManifestPathError(path)
-
-        resolved = self.DATA_DIR.joinpath(path).resolve()
-        if not str(resolved).startswith(str(self.DATA_DIR.resolve())):
-            raise InvalidManifestPathError(path)
-
-        return resolved
-
-    def _relative_path(self, absolute_path: Path, /) -> str:
-        """Return the path of ``absolute_path`` relative to ``DATA_DIR``.
-
-        Args:
-            absolute_path: Path inside ``DATA_DIR``.
-
-        Returns:
-            Relative path string, or an empty string when ``absolute_path``
-            equals ``DATA_DIR``.
-
-        """
-        relative = absolute_path.relative_to(self.DATA_DIR.resolve())
-        return str(relative) if str(relative) != "." else ""
-
-    def get_instance_dir(self, path: str, /) -> Path:
-        """Resolve an instance path and verify that its manifest exists.
-
-        Args:
-            path: Instance name or relative path.
-
-        Returns:
-            Absolute path to the instance directory.
-
-        Raises:
-            InstanceNotFoundError: If the directory or its manifest is missing.
-
-        """
-        target_dir = self._resolve_path(path)
-        if not target_dir.joinpath(self.MANIFEST_FILE_NAME).exists():
-            raise InstanceNotFoundError(path)
-        return target_dir

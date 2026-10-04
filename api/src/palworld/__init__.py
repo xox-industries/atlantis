@@ -1,18 +1,25 @@
+"""Palworld dedicated server lifecycle management."""
+
 from __future__ import annotations
 
-import os
-from collections.abc import AsyncGenerator
 from pathlib import Path
-
-from aiodocker.containers import DockerContainer
 
 from src.app import App
 from src.game.base import GameServer
-from src.game.error import InstanceAlreadyRunningError
+from src.game.mixins import (
+    DockerContainerStartMixin,
+    SimpleStopMixin,
+    SteamValidationMixin,
+)
 from src.steam import Steam
 
 
-class Palworld(GameServer):
+class Palworld(
+    GameServer,
+    SteamValidationMixin,
+    DockerContainerStartMixin,
+    SimpleStopMixin,
+):
     DATA_DIR = App.DATA_DIR.joinpath("palworld")
 
     APP_DIR = Steam.APP_DIR.joinpath("PalServer")
@@ -21,35 +28,23 @@ class Palworld(GameServer):
     BASE_PORT = 8211
     GAME_KEY = "palworld"
     PROTOCOL = "udp"
+    STEAM_ANONYMOUS = True
+    STEAM_PLATFORM = "windows"
 
     CONTAINER_APP_DIR = Path("/home/app/PalServer")
 
-    def __init__(self, app: App, /) -> None:
-        super().__init__(app)
-
-    async def validate_app(self) -> AsyncGenerator[str]:
-        steam = self._app.steam
-        return await steam.validate_app(app_id=self.APP_ID, anonymous=True, platform="windows")
+    def _get_steam_beta_branch(self, _path: str | None, /) -> None:
+        return None
 
     def get_instance_saved_dir(self, name: str) -> Path:
         return self.get_instance_dir(name).joinpath("Saved")
 
-    async def start(self, instance: str, /) -> DockerContainer:
-        target = self.get_instance_dir(instance)
+    async def _ensure_instance_dirs(self, target_dir: Path, /) -> None:
+        target_dir.joinpath("Saved").mkdir(parents=True, exist_ok=True)
 
-        if await self.is_running(instance):
-            raise InstanceAlreadyRunningError(instance)
-
-        await self.stop(instance)
-
+    def _build_command(self, instance: str, /) -> list[str]:
         target_saved = self.get_instance_saved_dir(instance)
-        target_saved.mkdir(parents=True, exist_ok=True)
-
-        image = os.environ["DOCKER_IMAGE"]
-
-        name = self.get_instance_name(instance)
-
-        command = [
+        return [
             "bash",
             "-c",
             (
@@ -61,7 +56,7 @@ class Palworld(GameServer):
                 "echo 'Copying wineprefix' && "
                 f"cp -a {self._app.WINE_DIR} /home/app/wineprefix && "
                 "rm -f /home/app/wineprefix/wineserver /home/app/wineprefix/.update-timestamp && "
-                f"export WINEPREFIX=/home/app/wineprefix && "
+                "export WINEPREFIX=/home/app/wineprefix && "
                 "export WINEARCH=win64 && "
                 "export WINEDEBUG=-all && "
                 "echo 'Booting wineprefix' && "
@@ -72,36 +67,15 @@ class Palworld(GameServer):
             ),
         ]
 
-        volumes = {
-            str(App.get_host_path(target)): str(target),
+    def _build_volumes(self, target_dir: Path, /) -> dict[str, str]:
+        target_saved = target_dir.joinpath("Saved")
+        return {
+            str(App.get_host_path(target_dir)): str(target_dir),
             str(App.get_host_path(target_saved)): str(target_saved),
         }
-        read_only_volumes = {
+
+    def _build_read_only_volumes(self) -> dict[str, str]:
+        return {
             str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR),
             str(App.get_host_path(self._app.WINE_DIR)): str(self._app.WINE_DIR),
         }
-        labels = {
-            "atlantis.game": self.GAME_KEY,
-            "atlantis.instance": instance,
-        }
-
-        async with self._app.docker.find_free_port(
-            base=self.BASE_PORT,
-            game=self.GAME_KEY,
-            protocol=self.PROTOCOL,
-        ) as port:
-            ports = {f"{self.BASE_PORT}/{self.PROTOCOL}": ("0.0.0.0", port)}
-            return await self._app.docker.run(
-                name=name,
-                image=image,
-                command=command,
-                volumes=volumes,
-                read_only_volumes=read_only_volumes,
-                ports=ports,
-                labels=labels,
-            )
-
-    async def stop(self, instance: str, /) -> str:
-        name = self.get_instance_name(instance)
-        await self._app.docker.stop(name)
-        return name

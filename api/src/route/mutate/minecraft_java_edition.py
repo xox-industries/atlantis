@@ -52,9 +52,8 @@ class MutationMinecraftJavaEditionType:
         if ram is not UNSET:
             values["ram"] = ram
 
-        lazy_manifest = await info.context.app.minecraft_java_edition.update_manifest(
+        manifest = await info.context.app.minecraft_java_edition.update_manifest(
             path,
             **values,
         )
-        manifest = await lazy_manifest
         return MinecraftJavaEditionManifest.construct_model(manifest)

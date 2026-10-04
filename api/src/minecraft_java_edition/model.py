@@ -3,6 +3,29 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class CreateManifestArgs(BaseModel):
+    """Validated arguments for creating a Minecraft Java Edition manifest."""
+
+    minecraft_version: str
+    modloader_type: str
+    modloader_version: str
+    ram: int
+
+
+class UpdateManifestArgs(BaseModel):
+    """Validated arguments for updating a Minecraft Java Edition manifest.
+
+    Every field is required: the update hook merges the existing manifest
+    under the provided arguments before validation, so unspecified fields
+    carry the persisted values.
+    """
+
+    minecraft_version: str
+    modloader_type: str
+    modloader_version: str
+    ram: int
+
+
 class PersistedMinecraftJavaEditionManifest(BaseModel):
     path: str
     minecraft_version: str

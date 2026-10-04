@@ -1,3 +1,5 @@
+"""Minecraft Java Edition server manifest handling."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,24 +8,23 @@ import json
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import TypedDict, Unpack
 
 from src.app import App
-from src.game.base import ManifestGameServer
-from src.game.error import (
-    InstanceAlreadyRunningError,
-    ManifestAlreadyExistsError,
-    ManifestNotFoundError,
-)
+from src.game.error import InstanceAlreadyRunningError
+from src.game.manifest import ManifestGameServer
+from src.game.mixins import InteractiveStopMixin
 from src.minecraft_java_edition.java_version import get_java_version
-from src.minecraft_java_edition.model import PersistedMinecraftJavaEditionManifest
+from src.minecraft_java_edition.model import (
+    CreateManifestArgs,
+    PersistedMinecraftJavaEditionManifest,
+    UpdateManifestArgs,
+)
 from src.minecraft_java_edition.server import build_server_command, prepare_server
 from src.minecraft_java_edition.versions import (
     get_latest_minecraft_version,
     get_latest_modloader_version,
     validate_version,
 )
-from src.persistence.mixin.utils import LazyAwaitable
 
 
 class ModLoaderType(enum.StrEnum):
@@ -32,16 +33,17 @@ class ModLoaderType(enum.StrEnum):
     NEOFORGE = "neoforge"
 
 
-class MinecraftJavaEdition(ManifestGameServer):
+class MinecraftJavaEdition(
+    ManifestGameServer[PersistedMinecraftJavaEditionManifest],
+    InteractiveStopMixin,
+):
     DATA_DIR = App.DATA_DIR.joinpath("minecraft-java-edition")
 
     MANIFEST_FILE_NAME = "manifest.json"
     BASE_PORT = 25565
     GAME_KEY = "minecraft-java-edition"
     PROTOCOL = "tcp"
-
-    def __init__(self, app: App, /) -> None:
-        super().__init__(app)
+    STOP_COMMAND = b"stop\n"
 
     def _validate_modloader_type(self, modloader_type: str, /) -> None:
         if modloader_type not in {member.value for member in ModLoaderType}:
@@ -66,130 +68,50 @@ class MinecraftJavaEdition(ManifestGameServer):
     ) -> bool:
         return await validate_version(version_type, minecraft_version, modloader_version)
 
-    async def display_manifests(self) -> list[PersistedMinecraftJavaEditionManifest]:
-        def _walk() -> list[PersistedMinecraftJavaEditionManifest]:
-            manifests: list[PersistedMinecraftJavaEditionManifest] = []
-            for manifest_path in sorted(self.DATA_DIR.rglob(self.MANIFEST_FILE_NAME)):
-                relative_path = self._relative_path(manifest_path.parent)
-                manifests.append(self._read_sync(manifest_path, relative_path))
-            return manifests
-
-        return await asyncio.to_thread(_walk)
-
-    class CreateManifestArgs(TypedDict, total=False):
-        minecraft_version: str
-        modloader_type: str
-        modloader_version: str
-        ram: int
-
-    async def create_manifest(
+    def _create_manifest_model(
         self,
-        **kwargs: Unpack[CreateManifestArgs],
-    ) -> PersistedMinecraftJavaEditionManifest:
-        path = await self.create_instance()
-        minecraft_version = kwargs["minecraft_version"]
-        modloader_type = kwargs["modloader_type"]
-        modloader_version = kwargs["modloader_version"]
-        ram = kwargs["ram"]
-
-        self._validate_modloader_type(modloader_type)
-        target_dir = self._resolve_path(path)
-        manifest_path = target_dir.joinpath(self.MANIFEST_FILE_NAME)
-
-        if manifest_path.exists():
-            raise ManifestAlreadyExistsError(self._relative_path(target_dir))
-
-        java_version = get_java_version(minecraft_version)
-
-        def _write() -> PersistedMinecraftJavaEditionManifest:
-            target_dir.mkdir(parents=True, exist_ok=True)
-            manifest = PersistedMinecraftJavaEditionManifest(
-                path=self._relative_path(target_dir),
-                minecraft_version=minecraft_version,
-                modloader_type=modloader_type,
-                modloader_version=modloader_version,
-                ram=ram,
-                java_version=java_version,
-                jvm_arguments=[],
-            )
-            manifest_path.write_text(
-                json.dumps(manifest.to_dict(), indent=2) + "\n",
-                encoding="utf-8",
-            )
-            return manifest
-
-        return await asyncio.to_thread(_write)
-
-    class UpdateManifestArgs(TypedDict, total=False):
-        minecraft_version: str
-        modloader_type: str
-        modloader_version: str
-        ram: int
-
-    async def update_manifest(
-        self,
-        path: str,
+        target_dir: Path,
         /,
-        **kwargs: Unpack[UpdateManifestArgs],
-    ) -> LazyAwaitable[PersistedMinecraftJavaEditionManifest]:
-        target_dir = self._resolve_path(path)
-        manifest_path = target_dir.joinpath(self.MANIFEST_FILE_NAME)
+        **kwargs: object,
+    ) -> PersistedMinecraftJavaEditionManifest:
+        args = CreateManifestArgs.model_validate(kwargs)
+        self._validate_modloader_type(args.modloader_type)
 
-        if not manifest_path.exists():
-            raise ManifestNotFoundError(self._relative_path(target_dir))
-
-        existing = await asyncio.to_thread(
-            self._read_sync,
-            manifest_path,
-            self._relative_path(target_dir),
+        return PersistedMinecraftJavaEditionManifest(
+            path=self._relative_path(target_dir),
+            minecraft_version=args.minecraft_version,
+            modloader_type=args.modloader_type,
+            modloader_version=args.modloader_version,
+            ram=args.ram,
+            java_version=get_java_version(args.minecraft_version),
+            jvm_arguments=[],
         )
 
-        minecraft_version = kwargs.get(
-            "minecraft_version",
-            existing.minecraft_version,
-        )
-        modloader_type = kwargs.get(
-            "modloader_type",
-            existing.modloader_type,
-        )
-        modloader_version = kwargs.get(
-            "modloader_version",
-            existing.modloader_version,
-        )
-        ram = kwargs.get("ram", existing.ram)
+    def _update_manifest_model(
+        self,
+        target_dir: Path,
+        existing: PersistedMinecraftJavaEditionManifest,
+        /,
+        **kwargs: object,
+    ) -> PersistedMinecraftJavaEditionManifest:
+        args = UpdateManifestArgs.model_validate({**existing.model_dump(), **kwargs})
+        self._validate_modloader_type(args.modloader_type)
+
         java_version = (
-            get_java_version(minecraft_version)
-            if minecraft_version != existing.minecraft_version
+            get_java_version(args.minecraft_version)
+            if args.minecraft_version != existing.minecraft_version
             else existing.java_version
         )
 
-        self._validate_modloader_type(modloader_type)
-
-        def _write() -> None:
-            manifest = PersistedMinecraftJavaEditionManifest(
-                path=self._relative_path(target_dir),
-                minecraft_version=minecraft_version,
-                modloader_type=modloader_type,
-                modloader_version=modloader_version,
-                ram=ram,
-                java_version=java_version,
-                jvm_arguments=existing.jvm_arguments,
-            )
-            manifest_path.write_text(
-                json.dumps(manifest.to_dict(), indent=2) + "\n",
-                encoding="utf-8",
-            )
-
-        await asyncio.to_thread(_write)
-
-        async def _query() -> PersistedMinecraftJavaEditionManifest:
-            return await asyncio.to_thread(
-                self._read_sync,
-                manifest_path,
-                self._relative_path(target_dir),
-            )
-
-        return LazyAwaitable(_query())
+        return PersistedMinecraftJavaEditionManifest(
+            path=self._relative_path(target_dir),
+            minecraft_version=args.minecraft_version,
+            modloader_type=args.modloader_type,
+            modloader_version=args.modloader_version,
+            ram=args.ram,
+            java_version=java_version,
+            jvm_arguments=existing.jvm_arguments,
+        )
 
     async def start(self, path: str, /) -> AsyncGenerator[str]:
         target_dir = self.get_instance_dir(path)
@@ -237,59 +159,21 @@ class MinecraftJavaEdition(ManifestGameServer):
             )
             yield f"Started on port {external_port}"
 
-    async def stop(self, path: str, /) -> AsyncGenerator[str]:
-        container = await self._app.docker.get_container(self.get_instance_name(path))
-        if container is None:
-            yield "Container not found"
-            return
-
-        info = await container.show()
-        if not info.get("State", {}).get("Running", False):
-            yield "Instance is not running"
-            await container.delete(force=True)
-            return
-
-        stream = container.attach(stdin=True, stdout=True, stderr=True)
-        try:
-            yield "Attaching to container and sending stop command"
-            command = b"stop\n"
-            await stream.write_in(command)
-
-            while True:
-                msg = await stream.read_out()
-                if msg is None:
-                    break
-                text = msg.data.decode("utf-8", errors="replace")
-                if text:
-                    yield text
-
-            yield "Waiting for container to stop"
-            await container.wait()
-            yield "Container stopped"
-        finally:
-            await stream.close()
-            await container.delete(force=True)
-
     def _read_sync(
         self,
         manifest_path: Path,
         relative_path: str,
+        /,
     ) -> PersistedMinecraftJavaEditionManifest:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
         minecraft = data["minecraft"]
         mod_loader = minecraft["modLoader"]
-        minecraft_version = minecraft["version"]
-        modloader_type = mod_loader["type"]
-        modloader_version = mod_loader["version"]
-        ram = minecraft["ram"]
-        java_version = minecraft["javaVersion"]
-        jvm_arguments = minecraft["jvmArguments"]
         return PersistedMinecraftJavaEditionManifest(
             path=relative_path,
-            minecraft_version=minecraft_version,
-            modloader_type=modloader_type,
-            modloader_version=modloader_version,
-            ram=ram,
-            java_version=java_version,
-            jvm_arguments=jvm_arguments,
+            minecraft_version=minecraft["version"],
+            modloader_type=mod_loader["type"],
+            modloader_version=mod_loader["version"],
+            ram=minecraft["ram"],
+            java_version=minecraft["javaVersion"],
+            jvm_arguments=minecraft["jvmArguments"],
         )
