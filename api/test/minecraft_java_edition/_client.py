@@ -2,92 +2,27 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx
-import pytest
 import websockets
-from _pytest.mark.structures import ParameterSet
 from mcstatus import JavaServer
-from packaging.version import parse as parse_version
 from websockets.typing import Subprotocol
+
+from test.minecraft_java_edition._operations import START_SUBSCRIPTION, STOP_SUBSCRIPTION
 
 if TYPE_CHECKING:
     from test.conftest import ApiUrl
 
 
-MINECRAFT_VERSIONS: Final[tuple[str, ...]] = (
-    "1.8",
-    "1.11.2",
-    "1.12.2",
-    "1.16.5",
-    "1.17.1",
-    "1.18.2",
-    "1.19.4",
-    "1.20.6",
-    "1.21",
-    "1.21.1",
-    "1.21.11",
-    "26.1",
-    "26.1.2",
-    "26.3",
-)
-MODLOADER_TYPES: Final[tuple[str, ...]] = (
-    "forge",
-    "neoforge",
-    "fabric",
-)
-
-LATEST_MODLOADER_QUERY: Final[str] = """
-query LatestModloaderVersion($modloaderType: String!, $minecraftVersion: String!) {
-    latestMinecraftJavaEditionModloaderVersion(
-        modloaderType: $modloaderType
-        minecraftVersion: $minecraftVersion
-    )
-}
-"""
-
-CREATE_MUTATION: Final[str] = """
-mutation CreateMinecraftJavaEdition(
-    $path: String!
-    $minecraftVersion: String!
-    $modloaderType: String!
-    $modloaderVersion: String!
-    $ram: Int!
-) {
-    createMinecraftJavaEdition(
-        path: $path
-        minecraftVersion: $minecraftVersion
-        modloaderType: $modloaderType
-        modloaderVersion: $modloaderVersion
-        ram: $ram
-    ) {
-        path
-    }
-}
-"""
-
-STOP_MUTATION: Final[str] = """
-mutation StopMinecraftJavaEdition($path: String!) {
-    stopMinecraftJavaEdition(path: $path) {
-        path
-    }
-}
-"""
-
-START_SUBSCRIPTION: Final[str] = """
-subscription StartMinecraftJavaEdition($path: String!) {
-    startMinecraftJavaEdition(path: $path)
-}
-"""
-
-_GRAPHQL_TRANSPORT_WS = "graphql-transport-ws"
-_CONNECTION_ACK = "connection_ack"
-_CONNECTION_INIT = "connection_init"
-_NEXT = "next"
-_COMPLETE = "complete"
-_ERROR = "error"
-_SUBSCRIBE = "subscribe"
+_GRAPHQL_TRANSPORT_WS: Final[str] = "graphql-transport-ws"
+_CONNECTION_ACK: Final[str] = "connection_ack"
+_CONNECTION_INIT: Final[str] = "connection_init"
+_NEXT: Final[str] = "next"
+_COMPLETE: Final[str] = "complete"
+_ERROR: Final[str] = "error"
+_SUBSCRIBE: Final[str] = "subscribe"
 
 
 class GraphQLError(RuntimeError):
@@ -116,13 +51,15 @@ async def execute_graphql(
     return data.get("data", {})
 
 
-async def consume_start_subscription(
+async def _subscribe(
     api_url: ApiUrl,
-    path: str,
+    query: str,
+    data_field: str,
+    variables: dict[str, Any] | None = None,
     *,
     timeout_seconds: float = 300.0,
-) -> int:
-    """Subscribe to the start subscription and return the port once the server is up."""
+) -> AsyncGenerator[str]:
+    """Run a single GraphQL subscription and yield each ``data.<data_field>`` string."""
     deadline = asyncio.get_running_loop().time() + timeout_seconds
 
     async with websockets.connect(
@@ -141,10 +78,10 @@ async def consume_start_subscription(
             json.dumps(
                 {
                     "type": _SUBSCRIBE,
-                    "id": "start-sub",
+                    "id": "sub",
                     "payload": {
-                        "query": START_SUBSCRIPTION,
-                        "variables": {"path": path},
+                        "query": query,
+                        "variables": variables or {},
                     },
                 },
             ),
@@ -153,7 +90,7 @@ async def consume_start_subscription(
         while True:
             remaining = deadline - asyncio.get_running_loop().time()
             if remaining <= 0:
-                msg = "Start subscription timed out before yielding a port"
+                msg = "Subscription timed out before completing"
                 raise TimeoutError(msg)
 
             raw = await asyncio.wait_for(websocket.recv(), timeout=remaining)
@@ -163,8 +100,7 @@ async def consume_start_subscription(
             if message_type == _ERROR:
                 raise GraphQLError(message.get("payload", message))
             if message_type == _COMPLETE:
-                msg = "Subscription ended without yielding a port"
-                raise GraphQLError(msg)
+                return
             if message_type != _NEXT:
                 continue
 
@@ -172,12 +108,50 @@ async def consume_start_subscription(
             if "errors" in payload:
                 raise GraphQLError(payload["errors"])
 
-            text = payload.get("data", {}).get("startMinecraftJavaEdition")
-            if not isinstance(text, str):
-                continue
-            print(text)
-            if text.startswith("Started on port"):
-                return int(text.removeprefix("Started on port").strip())
+            text = payload.get("data", {}).get(data_field)
+            if isinstance(text, str):
+                yield text
+
+
+async def consume_start_subscription(
+    api_url: ApiUrl,
+    path: str,
+    *,
+    timeout_seconds: float = 300.0,
+) -> int:
+    """Subscribe to the start subscription and return the port once the server is up."""
+    async for text in _subscribe(
+        api_url,
+        START_SUBSCRIPTION,
+        "startMinecraftJavaEdition",
+        {"path": path},
+        timeout_seconds=timeout_seconds,
+    ):
+        print(text)
+        if text.startswith("Started on port"):
+            return int(text.removeprefix("Started on port").strip())
+
+    msg = "Subscription ended without yielding a port"
+    raise GraphQLError(msg)
+
+
+async def consume_stop_subscription(
+    api_url: ApiUrl,
+    path: str,
+    *,
+    timeout_seconds: float = 300.0,
+) -> list[str]:
+    """Subscribe to the stop subscription and return all streamed output lines."""
+    return [
+        text
+        async for text in _subscribe(
+            api_url,
+            STOP_SUBSCRIPTION,
+            "stopMinecraftJavaEdition",
+            {"path": path},
+            timeout_seconds=timeout_seconds,
+        )
+    ]
 
 
 async def wait_for_server_status(
@@ -201,17 +175,3 @@ async def wait_for_server_status(
             await asyncio.sleep(sleep_seconds)
         else:
             return
-
-
-def build_matrix_params() -> list[ParameterSet]:
-    """Return parametrized (minecraft_version, modloader_type) pairs with xfail marks."""
-    params: list[ParameterSet] = []
-    for version in MINECRAFT_VERSIONS:
-        for modloader in MODLOADER_TYPES:
-            marks: list[pytest.MarkDecorator] = []
-            if modloader == "neoforge" and parse_version(version) < parse_version("1.20.2"):
-                marks.append(pytest.mark.xfail(reason="NeoForge requires Minecraft 1.20.2+"))
-            elif modloader == "fabric" and parse_version(version) < parse_version("1.14"):
-                marks.append(pytest.mark.xfail(reason="Fabric requires Minecraft 1.14+"))
-            params.append(pytest.param(version, modloader, marks=marks))
-    return params

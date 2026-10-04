@@ -41,6 +41,7 @@ class GameServer(ABC):
 
         """
         self._app = app
+        self._create_instance_lock = asyncio.Lock()
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     async def list_instances(self) -> list[str]:
@@ -69,9 +70,11 @@ class GameServer(ABC):
             The name of the newly created instance directory.
 
         """
-        name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
-        self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
-        return name
+        async with self._create_instance_lock:
+            await asyncio.sleep(1)
+            name = f"ses_{datetime.now(tz=UTC).strftime('%Y%m%d%H%M%S')}"
+            self.DATA_DIR.joinpath(name).mkdir(exist_ok=True)
+            return name
 
     def get_instance_name(self, instance: str, /) -> str:
         """Return the Docker container name for an instance.
