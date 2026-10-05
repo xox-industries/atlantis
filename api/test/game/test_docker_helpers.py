@@ -60,10 +60,12 @@ def test_palworld_command_volumes_and_ports(app: App, tmp_path: Path) -> None:
     assert "PalServer.exe" in command
     assert "-port=8211" in command
     assert "wineprefix" in command
+    assert "tar -C" in command
+    assert "ln -s" not in command
 
     assert game._build_volumes(target) == {
-        str(App.get_host_path(target)): str(target),
-        str(App.get_host_path(target / "Saved")): str(target / "Saved"),
+        str(App.get_host_path(target / "Saved")): str(game.CONTAINER_APP_DIR.joinpath("Pal", "Saved")),
+        str(App.get_host_path(target / "Mods")): str(game.CONTAINER_APP_DIR.joinpath("Mods")),
     }
     read_only_volumes = game._build_read_only_volumes()
     assert read_only_volumes == {
@@ -120,7 +122,7 @@ async def test_terraria_writes_server_config(app: App, tmp_path: Path) -> None:
     assert "npcstream=60" in config
 
 
-async def test_palworld_creates_saved_dir(app: App, tmp_path: Path) -> None:
+async def test_palworld_creates_saved_and_mods_dirs(app: App, tmp_path: Path) -> None:
     game = make_palworld(app, tmp_path / "palworld")
     target = tmp_path / "palworld" / "ses_0001"
     target.mkdir(parents=True)
@@ -128,6 +130,7 @@ async def test_palworld_creates_saved_dir(app: App, tmp_path: Path) -> None:
     await game._ensure_instance_dirs(target)
 
     assert target.joinpath("Saved").is_dir()
+    assert target.joinpath("Mods").is_dir()
 
 
 async def test_valheim_creates_worlds_dir(app: App, tmp_path: Path) -> None:
