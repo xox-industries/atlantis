@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "start": "bun index.tsx",
-    "build": "mkdir -p dist && bun build --compile --outfile dist/atlantis index.tsx",
+    "build": "mkdir -p dist && bun build --compile --env=inline --outfile dist/atlantis index.tsx",
     "typecheck": "bunx tsc --noEmit --project tsconfig.json",
     "lint": "bunx eslint .",
     "codegen": "bunx graphql-codegen --config graphql-codegen.js http://127.0.0.1:5000/graphql",
