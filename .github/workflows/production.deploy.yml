@@ -8,6 +8,9 @@ concurrency:
   group: production-deployment
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -54,7 +57,7 @@ jobs:
             trap 'rm -rf "$DEPLOY_DIR"' EXIT
 
             # Clone the release into the deploy directory
-            git clone --branch "$RELEASE_TAG" "https://$GH_TOKEN@github.com/${{ github.repository }}.git" "$SRC_DIR"
+            git clone --branch "$RELEASE_TAG" "https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}.git" "$SRC_DIR"
 
             # Make the env file available to bun inside the CLI folder
             cp "$DEPLOY_DIR/.env" "$SRC_DIR/cli/.env"
