@@ -18,7 +18,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:5000/health'', timeout=5).read()"',
+          '/app/.venv/bin/python -c "import urllib.request; urllib.request.urlopen(''http://localhost:5000/health'', timeout=5).read()"',
         ]
       timeout: 20s
       interval: 20s
