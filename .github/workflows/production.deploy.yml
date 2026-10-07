@@ -36,16 +36,16 @@ jobs:
           set -e
           DEPLOY_DIR="/tmp/atlantis-$RELEASE_TAG"
 
-          cat > .env <<EOF
-          DEPLOY_DIR=$DEPLOY_DIR
-          DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG
-          DOCKER_IMAGE_URL=$DOCKER_IMAGE_URL
-          GH_TOKEN=$GH_TOKEN
-          HOST_USERNAME=$HOST_USERNAME
-          RELEASE_TAG=$RELEASE_TAG
-          APP_VERSION=$RELEASE_TAG
-          API_ENDPOINT_URL=http://127.0.0.1:59111/graphql
-          EOF
+          {
+            echo "DEPLOY_DIR=$DEPLOY_DIR"
+            echo "DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG"
+            echo "DOCKER_IMAGE_URL=$DOCKER_IMAGE_URL"
+            echo "GH_TOKEN=$GH_TOKEN"
+            echo "HOST_USERNAME=$HOST_USERNAME"
+            echo "RELEASE_TAG=$RELEASE_TAG"
+            echo "APP_VERSION=$RELEASE_TAG"
+            echo "API_ENDPOINT_URL=http://127.0.0.1:59111/graphql"
+          } > .env
 
           ssh -o StrictHostKeyChecking=no "$HOST_USERNAME"@$TAILSCALE_HOST "mkdir -p $DEPLOY_DIR"
           scp -o StrictHostKeyChecking=no .env "$HOST_USERNAME"@$TAILSCALE_HOST:$DEPLOY_DIR/.env
@@ -79,10 +79,10 @@ jobs:
             done
 
             # Build the new API image before stopping the running services
-            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml build api'
+            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose --env-file "$DEPLOY_DIR/.env" -f docker-compose.prod.yml build api'
 
             # Stop the running API/Redis services before applying local migrations
-            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml stop'
+            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose --env-file "$DEPLOY_DIR/.env" -f docker-compose.prod.yml stop'
 
             # Apply local Supabase migrations; fall back to the previous version on failure
             set +e
@@ -92,7 +92,7 @@ jobs:
 
             if [ "$MIGRATE_STATUS" -ne 0 ]; then
               echo "Local Supabase migration failed, falling back to previous version"
-              sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml start'
+              sh -c 'export UID=$(id -u) GID=$(id -g); docker compose --env-file "$DEPLOY_DIR/.env" -f docker-compose.prod.yml start'
               exit 1
             fi
 
@@ -100,7 +100,7 @@ jobs:
             bun run api:codegen
 
             # Start the new services
-            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose -f docker-compose.prod.yml up -d'
+            sh -c 'export UID=$(id -u) GID=$(id -g); docker compose --env-file "$DEPLOY_DIR/.env" -f docker-compose.prod.yml up -d'
 
             # Wait for the API container to report healthy
             for i in $(seq 1 60); do
