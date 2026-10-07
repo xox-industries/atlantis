@@ -47,7 +47,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no "$HOST_USERNAME"@$TAILSCALE_HOST "mkdir -p $DEPLOY_DIR"
           scp -o StrictHostKeyChecking=no .env "$HOST_USERNAME"@$TAILSCALE_HOST:$DEPLOY_DIR/.env
 
-          ssh -o StrictHostKeyChecking=no "$HOST_USERNAME"@$TAILSCALE_HOST <<'REMOTE'
+          ssh -o StrictHostKeyChecking=no "$HOST_USERNAME"@$TAILSCALE_HOST "DEPLOY_DIR=$DEPLOY_DIR bash -s" <<'REMOTE'
             set -e
             source "$DEPLOY_DIR/.env"
             SRC_DIR="$DEPLOY_DIR/src"
