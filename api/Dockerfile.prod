@@ -46,7 +46,8 @@ RUN dpkg --add-architecture i386 && \
 RUN userdel -r ubuntu 2>/dev/null || true \
     && groupdel ubuntu 2>/dev/null || true \
     && groupadd --non-unique --gid "$GID" app \
-    && useradd --non-unique --uid "$UID" --gid "$GID" --create-home --shell /bin/bash app
+    && useradd --non-unique --uid "$UID" --gid "$GID" --create-home --shell /bin/bash app \
+    && chown app:app /app
 
 USER app
 
