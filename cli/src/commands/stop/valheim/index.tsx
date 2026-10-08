@@ -5,8 +5,8 @@ import * as p from '@clack/prompts'
 import chalk from 'chalk'
 
 export const stopValheimAction = async () => {
-  const { displayValheim: instances } =
-    await graphQLClient.ATL_CommandsStopValheim_DisplayValheim()
+  const { displayValheimInstances: instances } =
+    await graphQLClient.ATL_CommandsStopValheim_DisplayValheimInstances()
 
   if (!instances.some((i) => i.running)) {
     p.log.warn('No running Valheim instances available')
@@ -19,8 +19,8 @@ export const stopValheimAction = async () => {
       options: instances
         .filter((instance) => instance.running)
         .map((instance) => ({
-          value: instance.name,
-          label: chalk.magentaBright(instance.name),
+          value: instance.path,
+          label: chalk.magentaBright(instance.path === '' ? '.' : instance.path),
         })),
     })
   )
@@ -30,9 +30,11 @@ export const stopValheimAction = async () => {
   try {
     const { stopValheim: stopped } =
       await graphQLClient.ATL_CommandsStopValheim_StopValheim({
-        instance: selected,
+        path: selected,
       })
-    stopping.stop(`Valheim instance ${chalk.magentaBright(stopped.name)} stopped`)
+    stopping.stop(
+      `Valheim instance ${chalk.magentaBright(stopped.path === '' ? '.' : stopped.path)} stopped`
+    )
   } catch (e) {
     stopping.cancel()
     throw e

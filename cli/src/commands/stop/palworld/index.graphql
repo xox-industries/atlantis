@@ -1,15 +1,15 @@
-query ATL_CommandsStopPalworld_DisplayPalworld {
-  displayPalworld {
-    name
+query ATL_CommandsStopPalworld_DisplayPalworldInstances {
+  displayPalworldInstances {
+    path
     containerName
     running
     port
   }
 }
 
-mutation ATL_CommandsStopPalworld_StopPalworld($instance: String!) {
-  stopPalworld(instance: $instance) {
-    name
+mutation ATL_CommandsStopPalworld_StopPalworld($path: String!) {
+  stopPalworld(path: $path) {
+    path
     containerName
     running
     port

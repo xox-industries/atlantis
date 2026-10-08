@@ -9,7 +9,7 @@ export const createValheimAction = async () => {
   try {
     const { createValheim: created } =
       await graphQLClient.ATL_CommandsCreateValheim_CreateValheim()
-    creating.stop(`Valheim instance ${chalk.magentaBright(created.name)} created`)
+    creating.stop(`Valheim instance ${chalk.magentaBright(created.path)} created`)
   } catch (e) {
     creating.cancel()
     throw e

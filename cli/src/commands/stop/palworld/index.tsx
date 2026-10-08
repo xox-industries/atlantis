@@ -5,8 +5,8 @@ import * as p from '@clack/prompts'
 import chalk from 'chalk'
 
 export const stopPalworldAction = async () => {
-  const { displayPalworld: instances } =
-    await graphQLClient.ATL_CommandsStartPalworld_DisplayPalworld()
+  const { displayPalworldInstances: instances } =
+    await graphQLClient.ATL_CommandsStopPalworld_DisplayPalworldInstances()
 
   if (!instances.some((i) => i.running)) {
     p.log.warn('No running Palworld instances available')
@@ -19,8 +19,8 @@ export const stopPalworldAction = async () => {
       options: instances
         .filter((instance) => instance.running)
         .map((instance) => ({
-          value: instance.name,
-          label: chalk.magentaBright(instance.name),
+          value: instance.path,
+          label: chalk.magentaBright(instance.path === '' ? '.' : instance.path),
         })),
     })
   )
@@ -30,9 +30,11 @@ export const stopPalworldAction = async () => {
   try {
     const { stopPalworld: stopped } =
       await graphQLClient.ATL_CommandsStopPalworld_StopPalworld({
-        instance: selected,
+        path: selected,
       })
-    stopping.stop(`Palworld instance ${chalk.magentaBright(stopped.name)} stopped`)
+    stopping.stop(
+      `Palworld instance ${chalk.magentaBright(stopped.path === '' ? '.' : stopped.path)} stopped`
+    )
   } catch (e) {
     stopping.cancel()
     throw e

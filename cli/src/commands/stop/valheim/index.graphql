@@ -1,15 +1,15 @@
-query ATL_CommandsStopValheim_DisplayValheim {
-  displayValheim {
-    name
+query ATL_CommandsStopValheim_DisplayValheimInstances {
+  displayValheimInstances {
+    path
     containerName
     running
     port
   }
 }
 
-mutation ATL_CommandsStopValheim_StopValheim($instance: String!) {
-  stopValheim(instance: $instance) {
-    name
+mutation ATL_CommandsStopValheim_StopValheim($path: String!) {
+  stopValheim(path: $path) {
+    path
     containerName
     running
     port

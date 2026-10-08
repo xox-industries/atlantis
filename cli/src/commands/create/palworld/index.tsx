@@ -9,7 +9,7 @@ export const createPalworldAction = async () => {
   try {
     const { createPalworld: created } =
       await graphQLClient.ATL_CommandsCreatePalworld_CreatePalworld()
-    creating.stop(`Palworld instance ${chalk.magentaBright(created.name)} created`)
+    creating.stop(`Palworld instance ${chalk.magentaBright(created.path)} created`)
   } catch (e) {
     creating.cancel()
     throw e

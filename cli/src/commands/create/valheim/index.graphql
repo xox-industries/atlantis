@@ -1,7 +1,8 @@
 mutation ATL_CommandsCreateValheim_CreateValheim {
   createValheim {
-    name
-    running
-    port
+    path
+    steamAppBetaBranch
+    manifestType
+    manifestVersion
   }
 }

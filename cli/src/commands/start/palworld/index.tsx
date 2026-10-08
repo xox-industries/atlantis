@@ -6,8 +6,8 @@ import * as p from '@clack/prompts'
 import chalk from 'chalk'
 
 export const startPalworldAction = async (options: StartOptions) => {
-  const { displayPalworld: instances } =
-    await graphQLClient.ATL_CommandsStartPalworld_DisplayPalworld()
+  const { displayPalworldInstances: instances } =
+    await graphQLClient.ATL_CommandsStartPalworld_DisplayPalworldInstances()
 
   if (!instances.some((i) => !i.running)) {
     p.log.warn('No Palworld instances available to start')
@@ -18,8 +18,8 @@ export const startPalworldAction = async (options: StartOptions) => {
     await p.select({
       message: 'Select a Palworld instance',
       options: instances.map((instance) => ({
-        value: instance.name,
-        label: chalk.magentaBright(instance.name),
+        value: instance.path,
+        label: chalk.magentaBright(instance.path === '' ? '.' : instance.path),
         hint: instance.running ? `port ${instance.port}) (already running` : undefined,
         disabled: instance.running,
       })),
@@ -28,7 +28,11 @@ export const startPalworldAction = async (options: StartOptions) => {
 
   if (!options.skipSteamValidate) {
     const updating = p.taskLog({ title: 'Checking Palworld application', limit: 5 })
-    for await (const result of graphQLClient.ATL_CommandsStartPalworld_PalworldValidateApp()) {
+    for await (const result of graphQLClient.ATL_CommandsStartPalworld_PalworldValidateApp(
+      {
+        path: selected,
+      }
+    )) {
       const line = result.palworldValidateApp
       if (line.trim().length > 0) {
         updating.message(line)
@@ -42,10 +46,12 @@ export const startPalworldAction = async (options: StartOptions) => {
   try {
     const { startPalworld: started } =
       await graphQLClient.ATL_CommandsStartPalworld_StartPalworld({
-        instance: selected,
+        path: selected,
       })
     starting.stop(
-      `Palworld instance ${chalk.magentaBright(started.name)} started ${chalk.gray(`on port ${started.port}`)}`
+      `Palworld instance ${chalk.magentaBright(
+        started.path === '' ? '.' : started.path
+      )} started ${chalk.gray(`on port ${started.port}`)}`
     )
 
     return started.containerName

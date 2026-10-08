@@ -1,21 +1,21 @@
-query ATL_CommandsStartValheim_DisplayValheim {
-  displayValheim {
-    name
+query ATL_CommandsStartValheim_DisplayValheimInstances {
+  displayValheimInstances {
+    path
     containerName
     running
     port
   }
 }
 
-mutation ATL_CommandsStartValheim_StartValheim($instance: String!) {
-  startValheim(instance: $instance) {
-    name
+mutation ATL_CommandsStartValheim_StartValheim($path: String!) {
+  startValheim(path: $path) {
+    path
     containerName
     running
     port
   }
 }
 
-subscription ATL_CommandsStartValheim_ValheimValidateApp {
-  valheimValidateApp
+subscription ATL_CommandsStartValheim_ValheimValidateApp($path: String!) {
+  valheimValidateApp(path: $path)
 }

@@ -13,6 +13,7 @@ class SubscribeValheimType:
     @strawberry.subscription
     async def valheim_validate_app(
         self,
-        info: Info["AppContext"],
+        path: str,
+        info: Info[AppContext],
     ) -> AsyncGenerator[str]:
-        return await info.context.app.valheim.validate_app()
+        return await info.context.app.valheim.validate_app(path)

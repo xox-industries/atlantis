@@ -4,7 +4,7 @@ import strawberry
 from strawberry.types import Info
 
 from src.route.context import AppContext
-from src.route.resolve.palworld import PalworldInstance
+from src.route.resolve.palworld import PalworldInstance, PalworldManifest
 
 
 @strawberry.type
@@ -12,27 +12,26 @@ class MutationPalworldType:
     @strawberry.mutation
     async def create_palworld(
         self,
-        info: Info["AppContext"],
-    ) -> PalworldInstance:
-        name = await info.context.app.palworld.create_instance()
-        return PalworldInstance(
-            name=name,
-            container_name=info.context.app.palworld.get_container_name(name),
-            running=False,
-            port=None,
+        info: Info[AppContext],
+        *,
+        steam_app_beta_branch: str | None = None,
+    ) -> PalworldManifest:
+        manifest = await info.context.app.palworld.create_manifest(
+            steam_app_beta_branch=steam_app_beta_branch,
         )
+        return PalworldManifest.construct_model(manifest)
 
     @strawberry.mutation
     async def start_palworld(
         self,
-        instance: str,
-        info: Info["AppContext"],
+        path: str,
+        info: Info[AppContext],
     ) -> PalworldInstance:
-        container = await info.context.app.palworld.start(instance)
+        container = await info.context.app.palworld.start(path)
         port = await info.context.app.docker.get_host_port(container)
         return PalworldInstance(
-            name=instance,
-            container_name=info.context.app.palworld.get_container_name(instance),
+            path=path,
+            container_name=info.context.app.palworld.get_container_name(path),
             running=True,
             port=port,
         )
@@ -40,13 +39,13 @@ class MutationPalworldType:
     @strawberry.mutation
     async def stop_palworld(
         self,
-        instance: str,
-        info: Info["AppContext"],
+        path: str,
+        info: Info[AppContext],
     ) -> PalworldInstance:
-        await info.context.app.palworld.stop(instance)
+        await info.context.app.palworld.stop(path)
         return PalworldInstance(
-            name=instance,
-            container_name=info.context.app.palworld.get_container_name(instance),
+            path=path,
+            container_name=info.context.app.palworld.get_container_name(path),
             running=False,
             port=None,
         )

@@ -54,8 +54,9 @@ async def test_palworld_validate_app_uses_anonymous_windows(app: App, tmp_path: 
     steam = RecordingSteam()
     app.steam = steam
     game = make_palworld(app, tmp_path / "palworld")
+    created = await game.create_manifest()
 
-    lines = [line async for line in await game.validate_app()]
+    lines = [line async for line in await game.validate_app(created.path)]
 
     assert lines == ["ok"]
     assert steam.validate_calls == [
@@ -68,12 +69,32 @@ async def test_palworld_validate_app_uses_anonymous_windows(app: App, tmp_path: 
     ]
 
 
+async def test_palworld_validate_app_forwards_beta_branch(app: App, tmp_path: Path) -> None:
+    steam = RecordingSteam()
+    app.steam = steam
+    game = make_palworld(app, tmp_path / "palworld")
+    created = await game.create_manifest(steam_app_beta_branch="public-beta")
+
+    lines = [line async for line in await game.validate_app(created.path)]
+
+    assert lines == ["ok"]
+    assert steam.validate_calls == [
+        {
+            "app_id": "2394010",
+            "anonymous": True,
+            "platform": "windows",
+            "beta_branch": "public-beta",
+        },
+    ]
+
+
 async def test_valheim_validate_app_uses_anonymous_linux(app: App, tmp_path: Path) -> None:
     steam = RecordingSteam()
     app.steam = steam
     game = make_valheim(app, tmp_path / "valheim")
+    created = await game.create_manifest()
 
-    lines = [line async for line in await game.validate_app()]
+    lines = [line async for line in await game.validate_app(created.path)]
 
     assert lines == ["ok"]
     assert steam.validate_calls == [
@@ -82,5 +103,24 @@ async def test_valheim_validate_app_uses_anonymous_linux(app: App, tmp_path: Pat
             "anonymous": True,
             "platform": "linux",
             "beta_branch": None,
+        },
+    ]
+
+
+async def test_valheim_validate_app_forwards_beta_branch(app: App, tmp_path: Path) -> None:
+    steam = RecordingSteam()
+    app.steam = steam
+    game = make_valheim(app, tmp_path / "valheim")
+    created = await game.create_manifest(steam_app_beta_branch="beta")
+
+    lines = [line async for line in await game.validate_app(created.path)]
+
+    assert lines == ["ok"]
+    assert steam.validate_calls == [
+        {
+            "app_id": "896660",
+            "anonymous": True,
+            "platform": "linux",
+            "beta_branch": "beta",
         },
     ]
