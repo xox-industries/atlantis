@@ -40,7 +40,7 @@ class ManifestGameServer[ManifestT: ManifestModel](GameServer, ABC):
     bookkeeping.
     """
 
-    MANIFEST_FILE_NAME: ClassVar[str] = "manifest.json"
+    MANIFEST_FILE_NAME: ClassVar[str] = "atlantis.json"
     """Filename used for the per-instance manifest."""
 
     async def display_manifests(self) -> list[ManifestT]:

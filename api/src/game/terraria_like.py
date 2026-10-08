@@ -129,7 +129,7 @@ class TerrariaLikeGameServer[ManifestT: PersistedTerrariaManifest](
     container ``_build_command`` and the three manifest hooks.
     """
 
-    MANIFEST_FILE_NAME = "manifest.json"
+    MANIFEST_FILE_NAME = "atlantis.json"
     CONFIG_FILE_NAME = "manifest.conf"
     BASE_PORT = 7777
     MAX_PLAYERS = 16

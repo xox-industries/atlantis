@@ -149,8 +149,8 @@ export const updateMinecraftJavaEditionAction = async () => {
     updating.stop(
       `Updated manifest at ${chalk.magentaBright(
         updated.path === ''
-          ? 'minecraft-java-edition/manifest.json'
-          : `${updated.path}/manifest.json`
+          ? 'minecraft-java-edition/atlantis.json'
+          : `${updated.path}/atlantis.json`
       )}`
     )
   } catch (e) {
