@@ -79,7 +79,7 @@ export const createTModLoaderAction = async () => {
 
     creating.stop(
       `Created manifest at ${chalk.magentaBright(
-        `tmodloader/${created.path}/atlantis.json`
+        `tmodloader/${created.path}/trident.manifest.json`
       )}`
     )
   } catch (e) {

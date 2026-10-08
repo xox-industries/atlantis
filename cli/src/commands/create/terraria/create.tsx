@@ -79,7 +79,7 @@ export const createTerrariaAction = async () => {
 
     creating.stop(
       `Created manifest at ${chalk.magentaBright(
-        `terraria/${created.path}/atlantis.json`
+        `terraria/${created.path}/trident.manifest.json`
       )}`
     )
   } catch (e) {

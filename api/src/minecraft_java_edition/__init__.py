@@ -39,7 +39,7 @@ class MinecraftJavaEdition(
 ):
     DATA_DIR = App.DATA_DIR.joinpath("minecraft-java-edition")
 
-    MANIFEST_FILE_NAME = "atlantis.json"
+    MANIFEST_FILE_NAME = "trident.manifest.json"
     BASE_PORT = 25565
     GAME_KEY = "minecraft-java-edition"
     PROTOCOL = "tcp"

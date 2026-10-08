@@ -36,7 +36,7 @@ async def test_create_display_and_persist_terraria_manifest(app: App, tmp_path: 
     manifests = await game.display_manifests()
     assert [manifest.path for manifest in manifests] == [created.path]
 
-    raw = json.loads(game.get_instance_dir(created.path).joinpath("atlantis.json").read_text())
+    raw = json.loads(game.get_instance_dir(created.path).joinpath("trident.manifest.json").read_text())
     assert raw["terraria"]["autocreate"] == 3
     assert raw["terraria"]["steamAppBetaBranch"] == "public-beta"
     assert raw["manifestType"] == "terraria"
@@ -63,7 +63,7 @@ async def test_update_terraria_manifest_merges_over_existing(app: App, tmp_path:
     assert persisted[0].game_autocreate == 4
     assert persisted[0].game_seed == "seed2"
 
-    raw = json.loads(game.get_instance_dir(created.path).joinpath("atlantis.json").read_text())
+    raw = json.loads(game.get_instance_dir(created.path).joinpath("trident.manifest.json").read_text())
     assert raw["terraria"]["autocreate"] == 4
     assert raw["terraria"]["seed"] == "seed2"
     assert raw["terraria"]["steamAppBetaBranch"] == "beta"
@@ -96,7 +96,7 @@ async def test_display_manifests_sorts_by_path(app: App, tmp_path: Path) -> None
 
     second_dir = tmp_path / "terraria" / "ses_9999"
     second_dir.mkdir(parents=True)
-    second_dir.joinpath("atlantis.json").write_text(
+    second_dir.joinpath("trident.manifest.json").write_text(
         json.dumps(
             {
                 "terraria": {"autocreate": 1},
@@ -129,7 +129,7 @@ async def test_create_display_and_update_minecraft_manifest(app: App, tmp_path: 
     assert created.java_version > 0
     assert created.jvm_arguments == []
 
-    raw = json.loads(game.get_instance_dir(created.path).joinpath("atlantis.json").read_text())
+    raw = json.loads(game.get_instance_dir(created.path).joinpath("trident.manifest.json").read_text())
     assert raw["minecraft"]["version"] == "1.21.1"
     assert raw["minecraft"]["modLoader"]["type"] == "fabric"
     assert raw["minecraft"]["modLoader"]["version"] == "0.16.0"
@@ -166,7 +166,7 @@ async def test_tmodloader_manifest_type_is_preserved(app: App, tmp_path: Path) -
 
     created = await game.create_manifest(steam_app_beta_branch="beta", game_autocreate=1)
 
-    raw = json.loads(game.get_instance_dir(created.path).joinpath("atlantis.json").read_text())
+    raw = json.loads(game.get_instance_dir(created.path).joinpath("trident.manifest.json").read_text())
     assert raw["manifestType"] == "tmodloader"
     assert raw["terraria"]["autocreate"] == 1
     assert raw["terraria"]["steamAppBetaBranch"] == "beta"

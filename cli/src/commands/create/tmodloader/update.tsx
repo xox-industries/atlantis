@@ -107,7 +107,9 @@ export const updateTModLoaderAction = async () => {
 
     updating.stop(
       `Updated manifest at ${chalk.magentaBright(
-        updated.path === '' ? 'tmodloader/atlantis.json' : `${updated.path}/atlantis.json`
+        updated.path === ''
+          ? 'tmodloader/trident.manifest.json'
+          : `${updated.path}/trident.manifest.json`
       )}`
     )
   } catch (e) {

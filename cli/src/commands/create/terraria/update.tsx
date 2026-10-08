@@ -107,7 +107,9 @@ export const updateTerrariaAction = async () => {
 
     updating.stop(
       `Updated manifest at ${chalk.magentaBright(
-        updated.path === '' ? 'terraria/atlantis.json' : `${updated.path}/atlantis.json`
+        updated.path === ''
+          ? 'terraria/trident.manifest.json'
+          : `${updated.path}/trident.manifest.json`
       )}`
     )
   } catch (e) {

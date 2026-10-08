@@ -123,7 +123,7 @@ export const createMinecraftJavaEditionAction = async () => {
 
     creating.stop(
       `Created manifest at ${chalk.magentaBright(
-        `minecraft-java-edition/${created.path}/atlantis.json`
+        `minecraft-java-edition/${created.path}/trident.manifest.json`
       )}`
     )
   } catch (e) {
