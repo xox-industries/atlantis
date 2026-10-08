@@ -1,3 +1,4 @@
+import completionCommand from '@/src/commands/completion'
 import createCommand from '@/src/commands/create'
 import startCommand from '@/src/commands/start'
 import steamCommand from '@/src/commands/steam'
@@ -19,6 +20,7 @@ const program = new AtlantisCommand()
   .addCommand(stopCommand)
   .addCommand(createCommand)
   .addCommand(steamCommand)
+  .addCommand(completionCommand)
 
 const args = process.argv.slice(2)
 
