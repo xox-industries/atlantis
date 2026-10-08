@@ -17,6 +17,19 @@ export type StartOptions = {
   skipSteamValidate?: boolean
 }
 
+export const printAttachTips = (containerName: string) => {
+  const { unmount } = render(
+    <Box display="flex" flexDirection="column" padding={1}>
+      <Text>Attach to the console with {code(`docker attach ${containerName}`)}.</Text>
+      <Text>
+        Detach without stopping the server by pressing {code('Ctrl+P')}, then{' '}
+        {code('Ctrl+Q')}.
+      </Text>
+    </Box>
+  )
+  unmount()
+}
+
 const action = async (options: StartOptions) => {
   const choice = ensureNotCancelled(
     await p.select({
@@ -34,43 +47,29 @@ const action = async (options: StartOptions) => {
     })
   )
 
-  let containerName: string | undefined
   switch (choice) {
     case 'minecraft-java-edition':
-      containerName = await startMinecraftJavaEditionAction()
+      await startMinecraftJavaEditionAction()
       break
 
     case 'palworld':
-      containerName = await startPalworldAction(options)
+      await startPalworldAction(options)
       break
 
     case 'terraria':
-      containerName = await startTerrariaAction(options)
+      await startTerrariaAction(options)
       break
 
     case 'tmodloader':
-      containerName = await startTModLoaderAction(options)
+      await startTModLoaderAction(options)
       break
 
     case 'valheim':
-      containerName = await startValheimAction(options)
+      await startValheimAction(options)
       break
 
     default:
       break
-  }
-
-  if (containerName) {
-    const { unmount } = render(
-      <Box display="flex" flexDirection="column" padding={1}>
-        <Text>Attach to the console with {code(`docker attach ${containerName}`)}.</Text>
-        <Text>
-          Detach without stopping the server by pressing {code('Ctrl+P')}, then{' '}
-          {code('Ctrl+Q')}.
-        </Text>
-      </Box>
-    )
-    unmount()
   }
 }
 

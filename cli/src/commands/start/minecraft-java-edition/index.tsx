@@ -1,3 +1,4 @@
+import { printAttachTips } from '@/src/commands/start'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { graphQLClient } from '@/src/stores/graphql'
@@ -48,13 +49,13 @@ export const startMinecraftJavaEditionAction = async () => {
     )}`
   )
 
-  return updated?.containerName
+  if (updated?.containerName) {
+    printAttachTips(updated.containerName)
+  }
 }
 
 const startMinecraftJavaEditionCommand = new AtlantisCommand('minecraft-java-edition')
   .description('Start a Minecraft Java Edition instance')
-  .action(async () => {
-    await startMinecraftJavaEditionAction()
-  })
+  .action(startMinecraftJavaEditionAction)
 
 export default startMinecraftJavaEditionCommand

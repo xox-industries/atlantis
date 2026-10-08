@@ -1,4 +1,4 @@
-import { StartOptions } from '@/src/commands/start'
+import { printAttachTips, StartOptions } from '@/src/commands/start'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { graphQLClient } from '@/src/stores/graphql'
@@ -56,7 +56,7 @@ export const startTModLoaderAction = async (options: StartOptions) => {
       )} started ${chalk.gray(`on port ${started.port}`)}`
     )
 
-    return started.containerName
+    printAttachTips(started.containerName)
   } catch (e) {
     starting.cancel()
     throw e
@@ -66,8 +66,6 @@ export const startTModLoaderAction = async (options: StartOptions) => {
 const startTModLoaderCommand = new AtlantisCommand('tmodloader')
   .description('Start a TModLoader instance')
   .option('--skip-steam-validate', 'Skip Steam validation before starting')
-  .action(async (options: StartOptions) => {
-    await startTModLoaderAction(options)
-  })
+  .action(startTModLoaderAction)
 
 export default startTModLoaderCommand

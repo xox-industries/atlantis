@@ -1,4 +1,4 @@
-import { StartOptions } from '@/src/commands/start'
+import { printAttachTips, StartOptions } from '@/src/commands/start'
 import { AtlantisCommand } from '@/src/lib/command'
 import { ensureNotCancelled } from '@/src/lib/prompts'
 import { graphQLClient } from '@/src/stores/graphql'
@@ -56,7 +56,7 @@ export const startTerrariaAction = async (options: StartOptions) => {
       )} started ${chalk.gray(`on port ${started.port}`)}`
     )
 
-    return started.containerName
+    printAttachTips(started.containerName)
   } catch (e) {
     starting.cancel()
     throw e
@@ -66,8 +66,6 @@ export const startTerrariaAction = async (options: StartOptions) => {
 const startTerrariaCommand = new AtlantisCommand('terraria')
   .description('Start a Terraria instance')
   .option('--skip-steam-validate', 'Skip Steam validation before starting')
-  .action(async (options: StartOptions) => {
-    await startTerrariaAction(options)
-  })
+  .action(startTerrariaAction)
 
 export default startTerrariaCommand
