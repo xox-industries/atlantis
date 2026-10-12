@@ -54,6 +54,7 @@ class Palworld(
         return PersistedPalworldManifest(
             path=relative_path,
             steam_app_beta_branch=palworld.get("steamAppBetaBranch"),
+            ports=data.get("ports", []),
         )
 
     def _create_manifest_model(
@@ -65,6 +66,7 @@ class Palworld(
         return PersistedPalworldManifest(
             path=self._relative_path(target_dir),
             steam_app_beta_branch=cast("str | None", kwargs.get("steam_app_beta_branch")),
+            ports=[self.BASE_PORT],
         )
 
     def _update_manifest_model(
@@ -78,13 +80,17 @@ class Palworld(
         return PersistedPalworldManifest(
             path=self._relative_path(target_dir),
             steam_app_beta_branch=cast("str | None", steam_app_beta_branch),
+            ports=existing.ports,
         )
+
+    def _get_ports(self, instance: str, /) -> list[int]:
+        return self._get_manifest_ports(instance)
 
     async def _ensure_instance_dirs(self, target_dir: Path, /) -> None:
         target_dir.joinpath("Saved").mkdir(parents=True, exist_ok=True)
         target_dir.joinpath("Mods").mkdir(parents=True, exist_ok=True)
 
-    def _build_command(self, instance: str, /) -> list[str]:
+    def _build_command(self, instance: str, ports: list[int], /) -> list[str]:
         return [
             "bash",
             "-c",
@@ -100,10 +106,10 @@ class Palworld(
                 "export WINEPREFIX=/home/app/wineprefix && "
                 "export WINEARCH=win64 && "
                 "export WINEDEBUG=-all && "
-                f"echo 'Starting PalServer on port {self.BASE_PORT}' && "
+                f"echo 'Starting PalServer on port {ports[0]}' && "
                 f"xvfb-run -a sh -c 'wineboot -u && "
                 f"wine {self.CONTAINER_APP_DIR.joinpath('PalServer.exe')} "
-                f"-publiclobby -port={self.BASE_PORT}'; exit $?"
+                f"-publiclobby -port={ports[0]}'; exit $?"
             ),
         ]
 

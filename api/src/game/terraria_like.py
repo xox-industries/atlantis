@@ -52,6 +52,7 @@ def build_new_manifest[ManifestT: PersistedTerrariaManifest](
     model: type[ManifestT],
     *,
     path: str,
+    ports: list[int],
     values: dict[str, object],
 ) -> ManifestT:
     """Build a new manifest model from validated creation arguments."""
@@ -67,6 +68,7 @@ def build_new_manifest[ManifestT: PersistedTerrariaManifest](
         game_npcstream=60,
         game_secure=False,
         game_upnp=True,
+        ports=ports,
     )
 
 
@@ -90,6 +92,7 @@ def build_updated_manifest[ManifestT: PersistedTerrariaManifest](
         game_npcstream=existing.game_npcstream,
         game_secure=existing.game_secure,
         game_upnp=existing.game_upnp,
+        ports=existing.ports,
     )
 
 
@@ -112,6 +115,7 @@ def read_manifest[ManifestT: PersistedTerrariaManifest](
         game_secure=terraria.get("secure"),
         game_seed=terraria.get("seed"),
         game_upnp=terraria.get("upnp"),
+        ports=data.get("ports", []),
     )
 
 
@@ -154,6 +158,9 @@ class TerrariaLikeGameServer[ManifestT: PersistedTerrariaManifest](
         )
         return manifest.steam_app_beta_branch
 
+    def _get_ports(self, instance: str, /) -> list[int]:
+        return self._get_manifest_ports(instance)
+
     async def _ensure_instance_dirs(self, target_dir: Path, /) -> None:
         manifest = await asyncio.to_thread(
             self._read_sync,
@@ -171,7 +178,7 @@ class TerrariaLikeGameServer[ManifestT: PersistedTerrariaManifest](
             f"autocreate={manifest.game_autocreate}",
             "worldname=world",
             f"maxplayers={self.MAX_PLAYERS}",
-            f"port={self.BASE_PORT}",
+            f"port={manifest.ports[0] if manifest.ports else self.BASE_PORT}",
             f"secure={'1' if manifest.game_secure else '0'}",
             "language=en-US",
             f"upnp={'1' if manifest.game_upnp else '0'}",

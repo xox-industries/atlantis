@@ -24,7 +24,7 @@ class TModLoader(TerrariaLikeGameServer[PersistedTModLoaderManifest]):
     APP_DIR = Steam.APP_DIR.joinpath("tModLoader")
     CONTAINER_APP_DIR = Path("/home/app/tModLoader")
 
-    def _build_command(self, _instance: str, /) -> list[str]:
+    def _build_command(self, _instance: str, _ports: list[int], /) -> list[str]:
         return [
             "bash",
             "-c",
@@ -55,6 +55,7 @@ class TModLoader(TerrariaLikeGameServer[PersistedTModLoaderManifest]):
         return build_new_manifest(
             PersistedTModLoaderManifest,
             path=self._relative_path(target_dir),
+            ports=[self.BASE_PORT],
             values=kwargs,
         )
 

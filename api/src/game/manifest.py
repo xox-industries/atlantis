@@ -21,6 +21,7 @@ class ManifestModel(Protocol):
     """Structural interface satisfied by every persisted manifest model."""
 
     path: str
+    ports: list[int]
 
     def to_dict(self) -> dict: ...
 
@@ -170,6 +171,23 @@ class ManifestGameServer[ManifestT: ManifestModel](GameServer, ABC):
             **kwargs: Game-specific update arguments.
 
         """
+
+    def _get_manifest_ports(self, path: str, /) -> list[int]:
+        """Return the ports configured in an instance's manifest.
+
+        Legacy manifests missing the ``ports`` field fall back to
+        :attr:`BASE_PORT`.
+
+        Args:
+            path: Instance name or relative path.
+
+        """
+        target_dir = self.get_instance_dir(path)
+        manifest = self._read_sync(
+            target_dir.joinpath(self.MANIFEST_FILE_NAME),
+            self._relative_path(target_dir),
+        )
+        return manifest.ports or [self.BASE_PORT]
 
     def _resolve_path(self, path: str, /) -> Path:
         """Resolve a relative instance path to an absolute path under ``DATA_DIR``.

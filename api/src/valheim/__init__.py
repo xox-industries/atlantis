@@ -55,6 +55,7 @@ class Valheim(
         return PersistedValheimManifest(
             path=relative_path,
             steam_app_beta_branch=valheim.get("steamAppBetaBranch"),
+            ports=data.get("ports", []),
         )
 
     def _create_manifest_model(
@@ -66,6 +67,7 @@ class Valheim(
         return PersistedValheimManifest(
             path=self._relative_path(target_dir),
             steam_app_beta_branch=cast("str | None", kwargs.get("steam_app_beta_branch")),
+            ports=[self.BASE_PORT],
         )
 
     def _update_manifest_model(
@@ -79,12 +81,16 @@ class Valheim(
         return PersistedValheimManifest(
             path=self._relative_path(target_dir),
             steam_app_beta_branch=cast("str | None", steam_app_beta_branch),
+            ports=existing.ports,
         )
+
+    def _get_ports(self, instance: str, /) -> list[int]:
+        return self._get_manifest_ports(instance)
 
     async def _ensure_instance_dirs(self, target_dir: Path, /) -> None:
         target_dir.joinpath("worlds_local").mkdir(parents=True, exist_ok=True)
 
-    def _build_command(self, instance: str, /) -> list[str]:
+    def _build_command(self, instance: str, ports: list[int], /) -> list[str]:
         return [
             "bash",
             "-c",
@@ -100,7 +106,7 @@ class Valheim(
                 "export SteamAppId=892970 && "
                 f"'{self.CONTAINER_APP_DIR.joinpath('valheim_server.x86_64')}' "
                 f"-name '{instance}' "
-                f"-port {self.BASE_PORT} "
+                f"-port {ports[0]} "
                 "-public 0 "
                 "-nographics "
                 "-batchmode "

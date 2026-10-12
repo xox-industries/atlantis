@@ -34,6 +34,7 @@ class PersistedMinecraftJavaEditionManifest(BaseModel):
     ram: int
     java_version: int
     jvm_arguments: list[str] = Field(default_factory=list)
+    ports: list[int] = Field(default_factory=list)
 
     @property
     def manifest_type(self) -> str:
@@ -57,4 +58,5 @@ class PersistedMinecraftJavaEditionManifest(BaseModel):
             },
             "manifestType": self.manifest_type,
             "manifestVersion": self.manifest_version,
+            "ports": self.ports,
         }

@@ -50,6 +50,10 @@ class MinecraftJavaEditionManifest:
         return self._data.jvm_arguments
 
     @strawberry.field
+    def ports(self) -> list[int]:
+        return self._data.ports
+
+    @strawberry.field
     def manifest_type(self) -> str:
         return self._data.manifest_type
 

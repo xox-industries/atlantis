@@ -32,6 +32,7 @@ async def test_create_display_and_persist_terraria_manifest(app: App, tmp_path: 
     assert created.game_npcstream == 60
     assert created.game_secure is False
     assert created.game_upnp is True
+    assert created.ports == [game.BASE_PORT]
 
     manifests = await game.display_manifests()
     assert [manifest.path for manifest in manifests] == [created.path]
@@ -41,6 +42,7 @@ async def test_create_display_and_persist_terraria_manifest(app: App, tmp_path: 
     assert raw["terraria"]["steamAppBetaBranch"] == "public-beta"
     assert raw["manifestType"] == "terraria"
     assert raw["manifestVersion"] == 1
+    assert raw["ports"] == [game.BASE_PORT]
 
 
 async def test_update_terraria_manifest_merges_over_existing(app: App, tmp_path: Path) -> None:
@@ -128,6 +130,7 @@ async def test_create_display_and_update_minecraft_manifest(app: App, tmp_path: 
     assert created.ram == 4096
     assert created.java_version > 0
     assert created.jvm_arguments == []
+    assert created.ports == [game.BASE_PORT]
 
     raw = json.loads(game.get_instance_dir(created.path).joinpath("trident.manifest.json").read_text())
     assert raw["minecraft"]["version"] == "1.21.1"
@@ -137,6 +140,7 @@ async def test_create_display_and_update_minecraft_manifest(app: App, tmp_path: 
     assert raw["minecraft"]["javaVersion"] == created.java_version
     assert raw["manifestType"] == "minecraft-java-edition"
     assert raw["manifestVersion"] == 1
+    assert raw["ports"] == [game.BASE_PORT]
 
     updated = await game.update_manifest(created.path, ram=8192)
 
@@ -170,11 +174,33 @@ async def test_tmodloader_manifest_type_is_preserved(app: App, tmp_path: Path) -
     assert raw["manifestType"] == "tmodloader"
     assert raw["terraria"]["autocreate"] == 1
     assert raw["terraria"]["steamAppBetaBranch"] == "beta"
+    assert raw["ports"] == [game.BASE_PORT]
 
     manifests = await game.display_manifests()
     assert manifests[0].manifest_type == "tmodloader"
     assert manifests[0].steam_app_beta_branch == "beta"
+    assert manifests[0].ports == [game.BASE_PORT]
 
     updated = await game.update_manifest(created.path, game_autocreate=5)
     assert updated.game_autocreate == 5
     assert updated.manifest_type == "tmodloader"
+    assert updated.ports == [game.BASE_PORT]
+
+
+async def test_legacy_manifest_without_ports_falls_back_to_base_port(app: App, tmp_path: Path) -> None:
+    game = make_terraria(app, tmp_path / "terraria")
+    instance_dir = tmp_path / "terraria" / "ses_legacy"
+    instance_dir.mkdir(parents=True)
+    instance_dir.joinpath("trident.manifest.json").write_text(
+        json.dumps(
+            {
+                "terraria": {"autocreate": 1},
+                "manifestType": "terraria",
+                "manifestVersion": 1,
+            },
+            indent=2,
+        )
+        + "\n",
+    )
+
+    assert game._get_manifest_ports("ses_legacy") == [game.BASE_PORT]

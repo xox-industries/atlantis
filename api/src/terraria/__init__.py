@@ -24,7 +24,7 @@ class Terraria(TerrariaLikeGameServer[PersistedTerrariaManifest]):
     APP_DIR = Steam.APP_DIR.joinpath("Terraria")
     CONTAINER_APP_DIR = Path("/home/app/Terraria")
 
-    def _build_command(self, _instance: str, /) -> list[str]:
+    def _build_command(self, _instance: str, _ports: list[int], /) -> list[str]:
         return [
             "bash",
             "-c",
@@ -53,6 +53,7 @@ class Terraria(TerrariaLikeGameServer[PersistedTerrariaManifest]):
         return build_new_manifest(
             PersistedTerrariaManifest,
             path=self._relative_path(target_dir),
+            ports=[self.BASE_PORT],
             values=kwargs,
         )
 

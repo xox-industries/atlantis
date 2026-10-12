@@ -176,12 +176,12 @@ class FakeDocker(Docker):
         return container
 
     @asynccontextmanager
-    async def find_free_port(
+    async def find_free_ports(
         self,
         *,
-        base: int,
+        bases: list[int],
         game: str,
         protocol: str = "udp",
         max_attempts: int = 100,
-    ) -> AsyncGenerator[int]:
-        yield base
+    ) -> AsyncGenerator[list[int]]:
+        yield bases

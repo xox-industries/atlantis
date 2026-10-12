@@ -84,31 +84,42 @@ class DockerContainerStartMixin(ABC):
 
         image = os.environ["DOCKER_IMAGE"]
         name = self.get_instance_name(instance)
-        command = self._build_command(instance)
+        internal_ports = self._get_ports(instance)
+        command = self._build_command(instance, internal_ports)
         volumes = self._build_volumes(target_dir)
         read_only_volumes = self._build_read_only_volumes()
 
-        async with self._app.docker.find_free_port(
-            base=self.BASE_PORT,
+        async with self._app.docker.find_free_ports(
+            bases=internal_ports,
             game=self.GAME_KEY,
             protocol=self.PROTOCOL,
-        ) as port:
+        ) as external_ports:
             return await self._app.docker.run(
                 name=name,
                 image=image,
                 command=command,
                 volumes=volumes,
                 read_only_volumes=read_only_volumes,
-                ports=self._build_ports(port),
+                ports=self._build_ports(dict(zip(internal_ports, external_ports, strict=True))),
                 labels=self._build_labels(instance),
             )
 
+    def _get_ports(self, instance: str, /) -> list[int]:
+        """Return the internal ports to bind for an instance.
+
+        Args:
+            instance: Instance name or relative path.
+
+        """
+        return [self.BASE_PORT]
+
     @abstractmethod
-    def _build_command(self, instance: str, /) -> list[str]:
+    def _build_command(self, instance: str, ports: list[int], /) -> list[str]:
         """Build the shell command executed inside the container.
 
         Args:
             instance: Instance name or relative path.
+            ports: Internal ports bound for the instance.
 
         """
 
@@ -134,9 +145,9 @@ class DockerContainerStartMixin(ABC):
         """Map read-only host paths (game app data) into the container."""
         return {str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR)}
 
-    def _build_ports(self, port: int, /) -> dict[str, tuple[str, int]]:
-        """Map the container game port to the allocated host ``port``."""
-        return {f"{self.BASE_PORT}/{self.PROTOCOL}": ("0.0.0.0", port)}
+    def _build_ports(self, ports: dict[int, int], /) -> dict[str, tuple[str, int]]:
+        """Map each internal port to its allocated external host port."""
+        return {f"{internal}/{self.PROTOCOL}": ("0.0.0.0", external) for internal, external in ports.items()}
 
     def _build_labels(self, instance: str, /) -> dict[str, str]:
         """Return Docker labels identifying the game and instance."""

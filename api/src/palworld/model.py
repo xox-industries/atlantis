@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class PersistedPalworldManifest(BaseModel):
     path: str
     steam_app_beta_branch: str | None = Field(default=None)
+    ports: list[int] = Field(default_factory=list)
 
     @property
     def manifest_type(self) -> str:
@@ -22,4 +23,5 @@ class PersistedPalworldManifest(BaseModel):
             },
             "manifestType": self.manifest_type,
             "manifestVersion": self.manifest_version,
+            "ports": self.ports,
         }

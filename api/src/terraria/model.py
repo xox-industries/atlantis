@@ -14,6 +14,7 @@ class PersistedTerrariaManifest(BaseModel):
     game_secure: bool | None = Field(default=None)
     game_seed: str | None = Field(default=None)
     game_upnp: bool | None = Field(default=None)
+    ports: list[int] = Field(default_factory=list)
 
     @property
     def manifest_type(self) -> str:
@@ -38,4 +39,5 @@ class PersistedTerrariaManifest(BaseModel):
             },
             "manifestType": self.manifest_type,
             "manifestVersion": self.manifest_version,
+            "ports": self.ports,
         }

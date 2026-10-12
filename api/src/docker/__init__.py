@@ -240,6 +240,41 @@ class Docker:
             msg = f"No free port found after {max_attempts} attempts starting from {base}"
             raise RuntimeError(msg)
 
+    @asynccontextmanager
+    async def find_free_ports(
+        self,
+        *,
+        bases: list[int],
+        game: str,
+        protocol: str = "udp",
+        max_attempts: int = 100,
+    ) -> AsyncGenerator[list[int]]:
+        """Yield a free host port for each base port while holding the allocation lock.
+
+        Each base port maps to the first free host port at or after it. Allocated
+        ports are tracked within the call so the same base never yields a port
+        already handed to another base in this batch. The lock is held for the
+        duration of the ``async with`` block so ports cannot be claimed by another
+        caller before the container is created.
+        """
+        async with self._port_lock:
+            containers = await self._docker.containers.list(all=True)
+            used_ports = await self._used_ports_for_protocol(containers, protocol)
+
+            allocated: list[int] = []
+            for base in bases:
+                for offset in range(max_attempts):
+                    candidate = base + offset
+                    if candidate not in used_ports:
+                        allocated.append(candidate)
+                        used_ports.add(candidate)
+                        break
+                else:
+                    msg = f"No free port found after {max_attempts} attempts starting from {base}"
+                    raise RuntimeError(msg)
+
+            yield allocated
+
     async def _used_ports_for_protocol(
         self,
         containers: list[DockerContainer],

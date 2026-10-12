@@ -85,6 +85,7 @@ class MinecraftJavaEdition(
             ram=args.ram,
             java_version=get_java_version(args.minecraft_version),
             jvm_arguments=[],
+            ports=[self.BASE_PORT],
         )
 
     def _update_manifest_model(
@@ -111,6 +112,7 @@ class MinecraftJavaEdition(
             ram=args.ram,
             java_version=java_version,
             jvm_arguments=existing.jvm_arguments,
+            ports=existing.ports,
         )
 
     async def start(self, path: str, /) -> AsyncGenerator[str]:
@@ -128,7 +130,9 @@ class MinecraftJavaEdition(
             self._relative_path(target_dir),
         )
 
-        async for line in prepare_server(target_dir, manifest):
+        internal_ports = manifest.ports or [self.BASE_PORT]
+
+        async for line in prepare_server(target_dir, manifest, internal_ports):
             yield line
 
         command = build_server_command(target_dir, manifest)
@@ -142,12 +146,15 @@ class MinecraftJavaEdition(
             "atlantis.instance": path,
         }
 
-        async with self._app.docker.find_free_port(
-            base=self.BASE_PORT,
+        async with self._app.docker.find_free_ports(
+            bases=internal_ports,
             game=self.GAME_KEY,
             protocol=self.PROTOCOL,
-        ) as external_port:
-            ports = {f"{self.BASE_PORT}/{self.PROTOCOL}": ("0.0.0.0", external_port)}
+        ) as external_ports:
+            ports = {
+                f"{internal}/{self.PROTOCOL}": ("0.0.0.0", external)
+                for internal, external in zip(internal_ports, external_ports, strict=True)
+            }
             await self._app.docker.run(
                 name=name,
                 image=image,
@@ -157,7 +164,7 @@ class MinecraftJavaEdition(
                 labels=labels,
                 working_dir=str(target_dir),
             )
-            yield f"Started on port {external_port}"
+            yield f"Started on port {external_ports[0]}"
 
     def _read_sync(
         self,
@@ -176,4 +183,5 @@ class MinecraftJavaEdition(
             ram=minecraft["ram"],
             java_version=minecraft["javaVersion"],
             jvm_arguments=minecraft["jvmArguments"],
+            ports=data.get("ports", []),
         )

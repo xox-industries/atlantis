@@ -25,6 +25,10 @@ class PalworldManifest:
         return self._data.steam_app_beta_branch
 
     @strawberry.field
+    def ports(self) -> list[int]:
+        return self._data.ports
+
+    @strawberry.field
     def manifest_type(self) -> str:
         return self._data.manifest_type
 

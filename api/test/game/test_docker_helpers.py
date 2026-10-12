@@ -18,7 +18,7 @@ from test.game._helpers import (
 def test_terraria_command_volumes_ports_and_labels(app: App, tmp_path: Path) -> None:
     game = make_terraria(app, tmp_path / "terraria")
 
-    command = " ".join(game._build_command("ses_0001"))
+    command = " ".join(game._build_command("ses_0001", [game.BASE_PORT]))
     assert "/home/app/Terraria/TerrariaServer.bin.x86_64" in command
     assert "-config /home/app/.local/share/Terraria/manifest.conf" in command
 
@@ -29,7 +29,7 @@ def test_terraria_command_volumes_ports_and_labels(app: App, tmp_path: Path) -> 
     assert game._build_read_only_volumes() == {
         str(App.get_host_path(game.APP_DIR)): str(game.APP_DIR),
     }
-    assert game._build_ports(9000) == {"7777/tcp": ("0.0.0.0", 9000)}
+    assert game._build_ports({7777: 9000}) == {"7777/tcp": ("0.0.0.0", 9000)}
     assert game._build_labels("ses_0001") == {
         "atlantis.game": "terraria",
         "atlantis.instance": "ses_0001",
@@ -39,12 +39,12 @@ def test_terraria_command_volumes_ports_and_labels(app: App, tmp_path: Path) -> 
 def test_tmodloader_command_has_nosteam_flags(app: App, tmp_path: Path) -> None:
     game = make_tmodloader(app, tmp_path / "tmodloader")
 
-    command = " ".join(game._build_command("ses_0001"))
+    command = " ".join(game._build_command("ses_0001", [game.BASE_PORT]))
     assert "/home/app/tModLoader/start-tModLoaderServer.sh" in command
     assert "-nosteam" in command
     assert "-tmlsavedirectory /home/app/.local/share/Terraria" in command
     assert "-steamworkshopfolder none" in command
-    assert game._build_ports(9001) == {"7777/tcp": ("0.0.0.0", 9001)}
+    assert game._build_ports({7777: 9001}) == {"7777/tcp": ("0.0.0.0", 9001)}
     assert game._build_labels("ses_0001") == {
         "atlantis.game": "tmodloader",
         "atlantis.instance": "ses_0001",
@@ -56,7 +56,7 @@ def test_palworld_command_volumes_and_ports(app: App, tmp_path: Path) -> None:
     target = tmp_path / "palworld" / "myinstance"
     target.mkdir(parents=True)
 
-    command = " ".join(game._build_command("myinstance"))
+    command = " ".join(game._build_command("myinstance", [game.BASE_PORT]))
     assert "PalServer.exe" in command
     assert "-port=8211" in command
     assert "wineprefix" in command
@@ -72,7 +72,7 @@ def test_palworld_command_volumes_and_ports(app: App, tmp_path: Path) -> None:
         str(App.get_host_path(game.APP_DIR)): str(game.APP_DIR),
         str(App.get_host_path(game._app.WINE_DIR)): str(game._app.WINE_DIR),
     }
-    assert game._build_ports(9002) == {"8211/udp": ("0.0.0.0", 9002)}
+    assert game._build_ports({8211: 9002}) == {"8211/udp": ("0.0.0.0", 9002)}
     assert game._build_labels("myinstance") == {
         "atlantis.game": "palworld",
         "atlantis.instance": "myinstance",
@@ -82,7 +82,7 @@ def test_palworld_command_volumes_and_ports(app: App, tmp_path: Path) -> None:
 def test_valheim_command_volumes_and_ports(app: App, tmp_path: Path) -> None:
     game = make_valheim(app, tmp_path / "valheim")
 
-    command = " ".join(game._build_command("myinstance"))
+    command = " ".join(game._build_command("myinstance", [game.BASE_PORT]))
     assert "valheim_server.x86_64" in command
     assert "-name 'myinstance'" in command
     assert "-port 2456" in command
@@ -92,7 +92,7 @@ def test_valheim_command_volumes_and_ports(app: App, tmp_path: Path) -> None:
     assert game._build_volumes(target) == {
         str(App.get_host_path(target)): "/home/app/.config/unity3d/IronGate/Valheim",
     }
-    assert game._build_ports(9003) == {"2456/udp": ("0.0.0.0", 9003)}
+    assert game._build_ports({2456: 9003}) == {"2456/udp": ("0.0.0.0", 9003)}
     assert game._build_labels("myinstance") == {
         "atlantis.game": "valheim",
         "atlantis.instance": "myinstance",
@@ -164,10 +164,10 @@ async def test_terraria_start_runs_container_without_docker(
         {
             "name": name,
             "image": "atlantis:test",
-            "command": game._build_command(created.path),
+            "command": game._build_command(created.path, [game.BASE_PORT]),
             "volumes": game._build_volumes(game.get_instance_dir(created.path)),
             "read_only_volumes": game._build_read_only_volumes(),
-            "ports": game._build_ports(7777),
+            "ports": game._build_ports({7777: 7777}),
             "env": None,
             "labels": game._build_labels(created.path),
             "working_dir": None,

@@ -25,6 +25,7 @@ class _ServerContext:
 async def prepare_server(
     instance_dir: Path,
     manifest: PersistedMinecraftJavaEditionManifest,
+    ports: list[int],
 ) -> AsyncGenerator[str]:
     """Prepare the instance directory and yield setup logs."""
     java = _get_java_path(manifest.java_version)
@@ -36,6 +37,7 @@ async def prepare_server(
     )
 
     sign_eula(instance_dir)
+    _set_server_port(instance_dir, ports[0])
 
     if manifest.modloader_type == "forge":
         async for line in setup_forge(
@@ -131,6 +133,35 @@ def sign_eula(instance_dir: Path) -> None:
         "eula=true",
     ]
     eula_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _set_server_port(instance_dir: Path, port: int) -> None:
+    """Write ``server-port`` and ``query.port`` into ``server.properties``.
+
+    Existing lines for those keys are rewritten in place; every other line is
+    preserved. Missing keys are appended.
+    """
+    path = instance_dir.joinpath("server.properties")
+    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+
+    desired = {"server-port": str(port), "query.port": str(port)}
+    written: set[str] = set()
+    updated: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            key = stripped.split("=", 1)[0].strip()
+            if key in desired:
+                updated.append(f"{key}={desired[key]}")
+                written.add(key)
+                continue
+        updated.append(line)
+
+    for key, value in desired.items():
+        if key not in written:
+            updated.append(f"{key}={value}")
+
+    path.write_text("\n".join(updated) + "\n", encoding="utf-8")
 
 
 async def _download(url: str, destination: Path) -> AsyncGenerator[str]:
