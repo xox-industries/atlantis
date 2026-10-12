@@ -42,4 +42,4 @@ class PalworldInstance:
     path: str
     container_name: str
     running: bool
-    port: int | None = None
+    ports: list[int]

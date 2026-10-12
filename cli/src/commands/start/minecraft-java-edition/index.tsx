@@ -20,7 +20,9 @@ export const startMinecraftJavaEditionAction = async () => {
       options: instances.map((instance) => ({
         value: instance.path,
         label: chalk.magentaBright(instance.path || 'default'),
-        hint: instance.running ? `port ${instance.port} (already running)` : undefined,
+        hint: instance.running
+          ? `ports ${instance.ports.join(', ')}) (already running`
+          : undefined,
         disabled: instance.running,
       })),
     })
@@ -45,7 +47,7 @@ export const startMinecraftJavaEditionAction = async () => {
 
   starting.success(
     `Minecraft Java Edition instance ${chalk.magentaBright(selected)} started ${chalk.gray(
-      `on port ${updated?.port}`
+      `on ports ${updated?.ports?.join(', ')}`
     )}`
   )
 

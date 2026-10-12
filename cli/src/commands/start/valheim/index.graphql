@@ -3,7 +3,7 @@ query ATL_CommandsStartValheim_DisplayValheimInstances {
     path
     containerName
     running
-    port
+    ports
   }
 }
 
@@ -12,7 +12,7 @@ mutation ATL_CommandsStartValheim_StartValheim($path: String!) {
     path
     containerName
     running
-    port
+    ports
   }
 }
 

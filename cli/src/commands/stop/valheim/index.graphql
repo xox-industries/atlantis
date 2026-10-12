@@ -3,7 +3,7 @@ query ATL_CommandsStopValheim_DisplayValheimInstances {
     path
     containerName
     running
-    port
+    ports
   }
 }
 
@@ -12,6 +12,6 @@ mutation ATL_CommandsStopValheim_StopValheim($path: String!) {
     path
     containerName
     running
-    port
+    ports
   }
 }

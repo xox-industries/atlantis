@@ -27,7 +27,7 @@ class DisplayValheimType:
             ValheimInstance(
                 path=manifest.path,
                 container_name=info.context.app.valheim.get_container_name(manifest.path),
-                port=await info.context.app.valheim.get_host_port(manifest.path),
+                ports=await info.context.app.valheim.get_host_port(manifest.path),
                 running=await info.context.app.valheim.is_running(manifest.path),
             )
             for manifest in manifests

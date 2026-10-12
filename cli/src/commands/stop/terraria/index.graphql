@@ -3,7 +3,7 @@ query ATL_CommandsStopTerraria_DisplayTerrariaInstances {
     path
     containerName
     running
-    port
+    ports
   }
 }
 

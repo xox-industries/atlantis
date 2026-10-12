@@ -28,12 +28,12 @@ class MutationValheimType:
         info: Info[AppContext],
     ) -> ValheimInstance:
         container = await info.context.app.valheim.start(path)
-        port = await info.context.app.docker.get_host_port(container)
+        ports = await info.context.app.docker.get_host_port(container)
         return ValheimInstance(
             path=path,
             container_name=info.context.app.valheim.get_container_name(path),
             running=True,
-            port=port,
+            ports=ports,
         )
 
     @strawberry.mutation
@@ -47,5 +47,5 @@ class MutationValheimType:
             path=path,
             container_name=info.context.app.valheim.get_container_name(path),
             running=False,
-            port=None,
+            ports=[],
         )

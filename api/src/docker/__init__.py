@@ -156,47 +156,46 @@ class Docker:
         return bool(info.get("State", {}).get("Running"))
 
     @overload
-    async def get_host_port(self, name: str, /, *, protocol: str = "udp") -> int | None: ...
+    async def get_host_port(self, name: str, /) -> list[int]: ...
 
     @overload
-    async def get_host_port(self, container: DockerContainer, /, *, protocol: str = "udp") -> int | None: ...
+    async def get_host_port(self, container: DockerContainer, /) -> list[int]: ...
 
     async def get_host_port(
         self,
         name_or_container: str | DockerContainer,
         /,
-        *,
-        protocol: str = "udp",
-    ) -> int | None:
-        """Return the host-bound port for ``protocol`` on the given container.
+    ) -> list[int]:
+        """Return every host-bound port (``tcp`` and ``udp``) for a container.
 
-        The port is first looked up in the live network settings, then falls back
-        to the configured port bindings. Returns ``None`` when the container is
-        missing or has no binding for the requested protocol.
+        Ports are first looked up in the live network settings, then fall back to
+        the configured port bindings. Returns an empty list when the container is
+        missing or has no bindings.
         """
         container = (
             await self.get_container(name_or_container) if isinstance(name_or_container, str) else name_or_container
         )
         if container is None:
-            return None
+            return []
 
         info = await container.show()
-        network_port = self._extract_host_port(
+        network_ports = self._extract_host_ports(
             info.get("NetworkSettings", {}).get("Ports", {}),
-            protocol,
         )
-        if network_port is not None:
-            return network_port
+        if network_ports:
+            return network_ports
 
-        return self._extract_host_port(
+        return self._extract_host_ports(
             info.get("HostConfig", {}).get("PortBindings", {}),
-            protocol,
         )
 
-    def _extract_host_port(self, port_map: dict[str, JSONValue], protocol: str, /) -> int | None:
-        """Scan a Docker port mapping for the first host port matching ``protocol``."""
+    def _extract_host_ports(self, port_map: dict[str, JSONValue], /) -> list[int]:
+        """Return sorted unique host ports across ``tcp``/``udp``."""
+        host_ports: set[int] = set()
         for container_port_proto, bindings in port_map.items():
-            if not isinstance(container_port_proto, str) or not container_port_proto.endswith(f"/{protocol}"):
+            if not isinstance(container_port_proto, str):
+                continue
+            if not container_port_proto.endswith("/tcp") and not container_port_proto.endswith("/udp"):
                 continue
             if not isinstance(bindings, list):
                 continue
@@ -204,9 +203,14 @@ class Docker:
                 if not isinstance(binding, dict):
                     continue
                 host_port = binding.get("HostPort")
-                if isinstance(host_port, str):
-                    return int(host_port)
-        return None
+                if not isinstance(host_port, str):
+                    continue
+                try:
+                    port = int(host_port)
+                except ValueError:
+                    continue
+                host_ports.add(port)
+        return sorted(host_ports)
 
     def get_container_name(self, name: str, /) -> str:
         """Return the prefixed Docker container name for a logical Atlantis name."""
@@ -218,7 +222,6 @@ class Docker:
         *,
         base: int,
         game: str,
-        protocol: str = "udp",
         max_attempts: int = 100,
     ) -> AsyncGenerator[int]:
         """Yield a free host port while holding the allocation lock.
@@ -229,7 +232,7 @@ class Docker:
         """
         async with self._port_lock:
             containers = await self._docker.containers.list(all=True)
-            used_ports = await self._used_ports_for_protocol(containers, protocol)
+            used_ports = await self._used_ports(containers)
 
             for offset in range(max_attempts):
                 candidate = base + offset
@@ -245,8 +248,6 @@ class Docker:
         self,
         *,
         bases: list[int],
-        game: str,
-        protocol: str = "udp",
         max_attempts: int = 100,
     ) -> AsyncGenerator[list[int]]:
         """Yield a free host port for each base port while holding the allocation lock.
@@ -259,7 +260,7 @@ class Docker:
         """
         async with self._port_lock:
             containers = await self._docker.containers.list(all=True)
-            used_ports = await self._used_ports_for_protocol(containers, protocol)
+            used_ports = await self._used_ports(containers)
 
             allocated: list[int] = []
             for base in bases:
@@ -275,20 +276,17 @@ class Docker:
 
             yield allocated
 
-    async def _used_ports_for_protocol(
+    async def _used_ports(
         self,
         containers: list[DockerContainer],
-        protocol: str,
         /,
     ) -> set[int]:
-        """Collect host ports already bound for ``protocol`` across ``containers``."""
+        """Collect host ports already bound across ``containers`` for ``tcp`` and ``udp``."""
         used_ports: set[int] = set()
         for container in containers:
             info = await container.show()
             ports = info.get("NetworkSettings", {}).get("Ports", {})
-            for port_proto, bindings in ports.items():
-                if not isinstance(port_proto, str) or not port_proto.endswith(f"/{protocol}"):
-                    continue
+            for bindings in ports.values():
                 for binding in bindings or []:
                     host_port = binding.get("HostPort")
                     if host_port is not None:

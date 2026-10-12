@@ -27,7 +27,7 @@ class DisplayPalworldType:
             PalworldInstance(
                 path=manifest.path,
                 container_name=info.context.app.palworld.get_container_name(manifest.path),
-                port=await info.context.app.palworld.get_host_port(manifest.path),
+                ports=await info.context.app.palworld.get_host_port(manifest.path),
                 running=await info.context.app.palworld.is_running(manifest.path),
             )
             for manifest in manifests

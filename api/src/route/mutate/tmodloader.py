@@ -75,10 +75,10 @@ class MutationTModLoaderType:
         info: Info[AppContext],
     ) -> TModLoaderInstance:
         container = await info.context.app.tmodloader.start(path)
-        port = await info.context.app.docker.get_host_port(container, protocol="tcp")
+        ports = await info.context.app.docker.get_host_port(container)
         return TModLoaderInstance(
             path=path,
             container_name=info.context.app.tmodloader.get_container_name(path),
             running=True,
-            port=port,
+            ports=ports,
         )

@@ -148,13 +148,11 @@ class MinecraftJavaEdition(
 
         async with self._app.docker.find_free_ports(
             bases=internal_ports,
-            game=self.GAME_KEY,
-            protocol=self.PROTOCOL,
         ) as external_ports:
-            ports = {
-                f"{internal}/{self.PROTOCOL}": ("0.0.0.0", external)
-                for internal, external in zip(internal_ports, external_ports, strict=True)
-            }
+            ports: dict[str, tuple[str, int]] = {}
+            for internal, external in zip(internal_ports, external_ports, strict=True):
+                for proto in ("tcp", "udp"):
+                    ports[f"{internal}/{proto}"] = ("0.0.0.0", external)
             await self._app.docker.run(
                 name=name,
                 image=image,

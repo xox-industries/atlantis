@@ -20,7 +20,9 @@ export const startTerrariaAction = async (options: StartOptions) => {
       options: instances.map((instance) => ({
         value: instance.path,
         label: chalk.magentaBright(instance.path === '' ? '.' : instance.path),
-        hint: instance.running ? `port ${instance.port}) (already running` : undefined,
+        hint: instance.running
+          ? `ports ${instance.ports.join(', ')}) (already running`
+          : undefined,
         disabled: instance.running,
       })),
     })
@@ -53,7 +55,7 @@ export const startTerrariaAction = async (options: StartOptions) => {
     starting.stop(
       `Terraria instance ${chalk.magentaBright(
         started.path === '' ? '.' : started.path
-      )} started ${chalk.gray(`on port ${started.port}`)}`
+      )} started ${chalk.gray(`on ports ${started.ports.join(', ')}`)}`
     )
 
     printAttachTips(started.containerName)

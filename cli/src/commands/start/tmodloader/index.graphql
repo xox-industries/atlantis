@@ -3,7 +3,7 @@ query ATL_CommandsStartTModLoader_DisplayTModLoaderInstances {
     path
     containerName
     running
-    port
+    ports
   }
 }
 
@@ -12,7 +12,7 @@ mutation ATL_CommandsStartTModLoader_StartTModLoader($path: String!) {
     path
     containerName
     running
-    port
+    ports
   }
 }
 

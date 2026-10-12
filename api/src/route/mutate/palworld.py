@@ -28,12 +28,12 @@ class MutationPalworldType:
         info: Info[AppContext],
     ) -> PalworldInstance:
         container = await info.context.app.palworld.start(path)
-        port = await info.context.app.docker.get_host_port(container)
+        ports = await info.context.app.docker.get_host_port(container)
         return PalworldInstance(
             path=path,
             container_name=info.context.app.palworld.get_container_name(path),
             running=True,
-            port=port,
+            ports=ports,
         )
 
     @strawberry.mutation
@@ -47,5 +47,5 @@ class MutationPalworldType:
             path=path,
             container_name=info.context.app.palworld.get_container_name(path),
             running=False,
-            port=None,
+            ports=[],
         )

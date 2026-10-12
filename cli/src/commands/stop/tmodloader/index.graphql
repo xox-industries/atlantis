@@ -3,7 +3,7 @@ query ATL_CommandsStopTModLoader_DisplayTModLoaderInstances {
     path
     containerName
     running
-    port
+    ports
   }
 }
 

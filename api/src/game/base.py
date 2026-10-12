@@ -130,19 +130,19 @@ class GameServer(ABC):
         """
         return await self._app.docker.is_running(self.get_instance_name(instance))
 
-    async def get_host_port(self, instance: str, /) -> int | None:
-        """Return the host-bound port for a running instance.
+    async def get_host_port(self, instance: str, /) -> list[int]:
+        """Return the host-bound ports for a running instance.
 
         Args:
             instance: Instance name or relative path.
 
         Returns:
-            The host port mapped to :attr:`BASE_PORT`, or ``None`` when the
+            The host ports mapped for the instance, or an empty list when the
             instance is not running.
 
         """
         name = self.get_instance_name(instance)
         if not await self._app.docker.is_running(name):
-            return None
+            return []
 
-        return await self._app.docker.get_host_port(name, protocol=self.PROTOCOL)
+        return await self._app.docker.get_host_port(name)

@@ -180,8 +180,6 @@ class FakeDocker(Docker):
         self,
         *,
         bases: list[int],
-        game: str,
-        protocol: str = "udp",
         max_attempts: int = 100,
     ) -> AsyncGenerator[list[int]]:
         yield bases

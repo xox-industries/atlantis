@@ -64,8 +64,6 @@ USER root
 
 RUN chmod +x /app/entrypoint.sh
 
-EXPOSE 5000 5678
-
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 CMD ["sh", "-c", \

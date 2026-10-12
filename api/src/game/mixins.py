@@ -91,8 +91,6 @@ class DockerContainerStartMixin(ABC):
 
         async with self._app.docker.find_free_ports(
             bases=internal_ports,
-            game=self.GAME_KEY,
-            protocol=self.PROTOCOL,
         ) as external_ports:
             return await self._app.docker.run(
                 name=name,
@@ -146,8 +144,12 @@ class DockerContainerStartMixin(ABC):
         return {str(App.get_host_path(self.APP_DIR)): str(self.APP_DIR)}
 
     def _build_ports(self, ports: dict[int, int], /) -> dict[str, tuple[str, int]]:
-        """Map each internal port to its allocated external host port."""
-        return {f"{internal}/{self.PROTOCOL}": ("0.0.0.0", external) for internal, external in ports.items()}
+        """Map each internal port to its allocated external host port for ``tcp`` and ``udp``."""
+        bindings: dict[str, tuple[str, int]] = {}
+        for internal, external in ports.items():
+            for proto in ("tcp", "udp"):
+                bindings[f"{internal}/{proto}"] = ("0.0.0.0", external)
+        return bindings
 
     def _build_labels(self, instance: str, /) -> dict[str, str]:
         """Return Docker labels identifying the game and instance."""

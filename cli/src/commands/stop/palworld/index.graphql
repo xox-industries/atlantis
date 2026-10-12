@@ -3,7 +3,7 @@ query ATL_CommandsStopPalworld_DisplayPalworldInstances {
     path
     containerName
     running
-    port
+    ports
   }
 }
 
@@ -12,6 +12,6 @@ mutation ATL_CommandsStopPalworld_StopPalworld($path: String!) {
     path
     containerName
     running
-    port
+    ports
   }
 }

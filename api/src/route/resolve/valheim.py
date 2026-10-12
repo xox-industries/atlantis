@@ -41,5 +41,5 @@ class ValheimManifest:
 class ValheimInstance:
     path: str
     container_name: str
-    port: int | None
+    ports: list[int]
     running: bool

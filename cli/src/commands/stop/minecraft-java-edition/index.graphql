@@ -2,7 +2,7 @@ query ATL_CommandsStopMinecraftJavaEdition_DisplayMinecraftJavaEditionInstances 
   displayMinecraftJavaEditionInstances {
     path
     containerName
-    port
+    ports
     running
   }
 }
